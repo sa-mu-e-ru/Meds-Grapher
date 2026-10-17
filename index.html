@@ -84,6 +84,15 @@ h2 button.danger{color:var(--danger)}
 .row .t2{display:block;font-size:13px;color:var(--muted)}
 .row .time{font-variant-numeric:tabular-nums;font-size:17px;color:var(--text)}
 .empty{padding:22px 16px;text-align:center;color:var(--muted)}
+.plan{margin-top:16px}
+.plan:first-child{margin-top:20px}
+.row.head .fg{min-height:54px}
+.pname{font-size:20px;font-weight:700}
+.count{font-size:17px;color:var(--muted)}
+.row .empty{padding:14px 16px;text-align:left;background:var(--card)}
+.listfoot{display:flex;justify-content:space-between;margin:6px 2px 0}
+.listfoot button{min-height:44px;padding:0 8px;color:var(--accent);font-size:16px;font-weight:500}
+.listfoot button.danger{color:var(--danger)}
 .fab{position:fixed;left:calc(var(--sal) + 16px);right:calc(var(--sar) + 16px);bottom:calc(var(--sab) + 14px);height:56px;border-radius:16px;background:var(--accent);color:var(--accent-text);font-size:18px;font-weight:650;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(10,102,216,.35);z-index:5;max-width:640px;margin:0 auto}
 .fab:active{filter:brightness(.92)}
 main{max-width:640px;margin:0 auto}
@@ -115,8 +124,6 @@ main{max-width:640px;margin:0 auto}
 .chip[aria-pressed=true]{background:var(--accent);color:var(--accent-text)}
 .pchip{display:inline-flex;align-items:center;gap:7px}
 .pchip i{width:10px;height:10px;border-radius:5px;display:inline-block;box-shadow:0 0 0 1.5px rgba(255,255,255,.8)}
-.tag{display:inline-flex;align-items:center;gap:4px;margin-right:8px}
-.tag i{width:8px;height:8px;border-radius:4px;display:inline-block}
 .switch{position:relative;width:51px;height:31px;flex:none}
 .switch input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;z-index:1;cursor:pointer}
 .switch span{position:absolute;inset:0;background:var(--fill);border-radius:16px;transition:background .2s}
@@ -164,13 +171,9 @@ main{max-width:640px;margin:0 auto}
   </div>
   <div id="cmp" class="cmp card hidden"></div>
 
-  <h2><span>Doses</span><button id="btnClear" class="danger">Clear all</button></h2>
-  <div class="card list" id="doseList"></div>
-  <p class="note" id="listNote">Tap a dose to edit. Swipe left to delete.</p>
-
-  <h2><span>Plans</span><button id="btnAddPlan">+ Add plan</button></h2>
-  <div class="card list" id="planList"></div>
-  <p class="note">Each plan is drawn as its own line. Tap to rename, swipe left to delete.</p>
+  <div id="plans"></div>
+  <div class="listfoot"><button id="btnAddPlan">+ Add plan</button><button id="btnClear" class="danger">Clear all</button></div>
+  <p class="note">Tap to edit or rename. Swipe left to delete.</p>
 </main>
 
 <button class="fab" id="btnAdd"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add dose</button>
@@ -210,7 +213,7 @@ main{max-width:640px;margin:0 auto}
       <div class="field"><label for="planName">Name</label><input id="planName" type="text" maxlength="80" autocomplete="off" enterkeyhint="done" style="width:14em"></div>
     </div>
     <div id="planCopyWrap" class="hidden"><p class="note" style="margin:14px 4px 6px">Start with the doses from</p><div class="chips" id="planCopy"></div>
-      <p class="note">Copied doses are shared, so editing one changes it in both plans. To change a dose in one plan only, untick the other plan when you edit it.</p></div>
+</div>
     <button class="btn danger hidden" id="planDelete">Delete plan</button>
   </div>
 </section>
@@ -341,39 +344,27 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) ? n : d; };
 
 // ---------- state & storage ----------
-// v2: doses live in one list; each dose lists the plan ids it belongs to.
+// v3: each plan owns its doses. yesterday maps plan id -> doses (for carry-over).
 let storageOK = true;
 function defaultState() {
   const id = uid();
   return {
-    v: 2,
-    plans: [{ id, name: 'Today' }],
-    doses: [],
+    v: 3,
+    plans: [{ id, name: 'Today', doses: [] }],
     settings: { ...Model.DEFAULTS, ...CHART_DEFAULTS },
     last: { product: 'ldx', mg: { ldx: 30, dex: 5 }, plans: [id] },
-    yesterday: []
+    yesterday: {}
   };
 }
-function sanitizeDose(d, ids) {
+function sanitizeDose(d) {
   if (!d || typeof d !== 'object') return null;
   const product = d.product === 'dex' ? 'dex' : d.product === 'ldx' ? 'ldx' : null;
   const mg = num(d.mg, NaN);
   const time = typeof d.time === 'string' && /^\d{1,2}:\d{2}$/.test(d.time) ? d.time.padStart(5, '0') : null;
   if (!product || !(mg > 0) || !time) return null;
-  const plans = Array.isArray(d.plans) ? [...new Set(d.plans.filter(id => ids.includes(id)))] : [];
-  return { id: typeof d.id === 'string' ? d.id : uid(), product, mg, time, food: !!d.food, plans };
+  return { id: uid(), product, mg, time, food: !!d.food };
 }
-// Identical doses in several plans become one dose shared by those plans.
-function mergeDoses(list) {
-  const byKey = new Map();
-  for (const d of list) {
-    const k = [d.product, d.mg, d.time, d.food].join('|');
-    const m = byKey.get(k);
-    if (m) m.plans = [...new Set(m.plans.concat(d.plans))];
-    else byKey.set(k, { ...d, plans: d.plans.slice() });
-  }
-  return [...byKey.values()];
-}
+// Accepts v1 (doses inside plans), v2 (one dose list tagged with plan ids) and v3.
 function sanitize(s) {
   const out = defaultState();
   if (!s || typeof s !== 'object') return out;
@@ -381,16 +372,24 @@ function sanitize(s) {
   if (rawPlans.length) {
     out.plans = rawPlans.map(p => ({
       id: typeof p.id === 'string' ? p.id : uid(),
-      name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 80) : 'Plan'
+      name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 80) : 'Plan',
+      doses: Array.isArray(p.doses) ? p.doses.map(sanitizeDose).filter(Boolean) : []
     }));
   }
   const ids = out.plans.map(p => p.id);
-  let doses = [];
-  if (Array.isArray(s.doses)) doses = s.doses.map(d => sanitizeDose(d, ids));
-  else rawPlans.forEach((p, i) => { // v1 format: doses stored inside each plan
-    if (Array.isArray(p.doses)) for (const d of p.doses) doses.push(sanitizeDose({ ...d, plans: [out.plans[i].id] }, ids));
-  });
-  out.doses = mergeDoses(doses.filter(d => d && d.plans.length));
+  const tagged = (list, fallbackAll) => { // v2-style lists -> per-plan map
+    const m = {};
+    for (const d of list || []) {
+      const sd = sanitizeDose(d); if (!sd) continue;
+      const to = Array.isArray(d.plans) ? d.plans.filter(id => ids.includes(id)) : fallbackAll ? ids : [];
+      for (const id of to) (m[id] = m[id] || []).push({ ...sd, id: uid() });
+    }
+    return m;
+  };
+  if (Array.isArray(s.doses)) {
+    const m = tagged(s.doses, false);
+    for (const p of out.plans) p.doses = p.doses.concat(m[p.id] || []);
+  }
   const st = s.settings && typeof s.settings === 'object' ? s.settings : {};
   for (const k of Object.keys(out.settings)) {
     if (typeof out.settings[k] === 'number') out.settings[k] = num(st[k], out.settings[k]);
@@ -406,9 +405,9 @@ function sanitize(s) {
   }
   const lastPlans = s.last && Array.isArray(s.last.plans) ? s.last.plans.filter(id => ids.includes(id)) : [];
   out.last.plans = lastPlans.length ? lastPlans : ids.slice();
-  // yesterday's doses from v1 carry no plan ids: count them for every plan
-  out.yesterday = Array.isArray(s.yesterday) ? s.yesterday.map(d => sanitizeDose(d, ids)).filter(Boolean)
-    .map(d => d.plans.length ? d : { ...d, plans: ids.slice() }) : [];
+  if (Array.isArray(s.yesterday)) out.yesterday = tagged(s.yesterday, true);
+  else if (s.yesterday && typeof s.yesterday === 'object')
+    for (const id of ids) if (Array.isArray(s.yesterday[id])) out.yesterday[id] = s.yesterday[id].map(sanitizeDose).filter(Boolean);
   return out;
 }
 function load() {
@@ -426,6 +425,14 @@ let state = load();
 try { localStorage.setItem(KEY + '.probe', '1'); localStorage.removeItem(KEY + '.probe'); } catch (e) { storageOK = false; }
 
 const planById = id => state.plans.find(p => p.id === id);
+const findDose = id => {
+  for (const plan of state.plans) {
+    const i = plan.doses.findIndex(d => d.id === id);
+    if (i >= 0) return { plan, i, dose: plan.doses[i] };
+  }
+  return null;
+};
+const allDoses = () => state.plans.flatMap(p => p.doses);
 const planColor = p => cssVar('--p' + (state.plans.indexOf(p) % MAX_PLANS));
 const params = () => state.settings;
 
@@ -448,11 +455,10 @@ const endMin = () => params().endHour * 60;
 const placeMin = hhmm => { let t = toMin(hhmm); if (t < startMin()) t += 1440; return t; };
 const nowMin = () => { const d = new Date(); let t = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; if (t < startMin()) t += 1440; return t; };
 
-const forPlan = (list, plan) => list.filter(d => d.plans.includes(plan.id));
 function placedDoses(plan) {
-  let ds = forPlan(state.doses, plan).map(d => ({ ...d, t: placeMin(d.time) }));
+  let ds = plan.doses.map(d => ({ ...d, t: placeMin(d.time) }));
   if (params().carry) {
-    const prev = forPlan(params().carryMode === 'cleared' ? state.yesterday : state.doses, plan);
+    const prev = params().carryMode === 'cleared' ? (state.yesterday[plan.id] || []) : plan.doses;
     ds = ds.concat(prev.map(d => ({ ...d, t: placeMin(d.time) - 1440, carry: true })));
   }
   return ds;
@@ -550,8 +556,11 @@ function drawChart() {
   }
   g.restore();
   // dose markers on x-axis, coloured by product
-  for (const d of state.doses) {
-    const t = placeMin(d.time);
+  const marked = new Set();
+  for (const d of allDoses()) {
+    const t = placeMin(d.time), key = d.product + t;
+    if (marked.has(key)) continue;
+    marked.add(key);
     if (t < s0 || t > s1) continue;
     const x = X(t), y = y1 + 1;
     g.fillStyle = cssVar(d.product === 'ldx' ? '--ldx' : '--dex');
@@ -630,8 +639,7 @@ function render() {
   drawChart();
   showReadout();
   renderStats();
-  renderList();
-  renderPlanList();
+  renderPlans();
   const lg = $('#legend');
   if (multi()) {
     lg.innerHTML = lastSeries.map(s => `<span><i style="background:${s.color}"></i>${esc(s.plan.name)}</span>`).join('');
@@ -657,38 +665,34 @@ function renderStats() {
     $('#sThr').innerHTML = s.cmax <= p.threshold ? '<small>never above</small>' : s.below === null ? '<small>&gt; 24 h</small>' : fmtT(s.below);
   }
 }
-const rowHTML = (id, dotStyle, title, sub, right) => `
-    <div class="row">
-      <button class="del" data-del="${esc(id)}" tabindex="-1">Delete</button>
-      <button class="fg" data-edit="${esc(id)}">
-        <span class="dot" style="${dotStyle}"></span>
-        <span class="main"><span class="t1">${title}</span>${sub ? `<span class="t2">${sub}</span>` : ''}</span>
-        ${right ? `<span class="time">${right}</span>` : ''}
-      </button>
+// Reminders-style: one card per plan, the plan name as its first row, doses beneath.
+function renderPlans() {
+  $('#plans').innerHTML = state.plans.map(plan => {
+    const doses = plan.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time));
+    return `<div class="card list plan">
+      <div class="row head">
+        <button class="del" data-del="plan:${esc(plan.id)}" tabindex="-1">Delete</button>
+        <button class="fg" data-edit="plan:${esc(plan.id)}" style="color:${planColor(plan)}">
+          <span class="main"><span class="pname">${esc(plan.name)}</span></span>
+          <span class="count">${doses.length || ''}</span>
+        </button>
+      </div>
+      ${doses.map(d => `<div class="row">
+        <button class="del" data-del="dose:${esc(d.id)}" tabindex="-1">Delete</button>
+        <button class="fg" data-edit="dose:${esc(d.id)}">
+          <span class="dot" style="background:var(--${d.product})"></span>
+          <span class="main"><span class="t1">${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg</span>${d.food ? '<span class="t2">With food</span>' : ''}</span>
+          <span class="time">${fmtClock(toMin(d.time))}</span>
+        </button>
+      </div>`).join('') || '<div class="row"><div class="empty">No doses</div></div>'}
     </div>`;
-function renderList() {
-  const el = $('#doseList');
-  const doses = state.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time));
-  $('#btnClear').classList.toggle('hidden', !doses.length);
-  $('#listNote').classList.toggle('hidden', !doses.length);
-  if (!doses.length) { el.innerHTML = `<div class="empty">No doses yet.</div>`; return; }
-  el.innerHTML = doses.map(d => {
-    const parts = [];
-    if (multi()) parts.push(state.plans.filter(p => d.plans.includes(p.id))
-      .map(p => `<span class="tag"><i style="background:${planColor(p)}"></i>${esc(p.name)}</span>`).join(''));
-    if (d.food) parts.push('With food');
-    return rowHTML(d.id, `background:var(--${d.product})`, `${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg`, parts.join(' · '), fmtClock(toMin(d.time)));
   }).join('');
-}
-function renderPlanList() {
-  $('#planList').innerHTML = state.plans.map(p => {
-    const n = state.doses.filter(d => d.plans.includes(p.id)).length;
-    return rowHTML(p.id, `background:${planColor(p)}`, esc(p.name), `${n} dose${n === 1 ? '' : 's'}`, '');
-  }).join('');
+  const any = allDoses().length > 0;
+  $('#btnClear').classList.toggle('hidden', !any);
   $('#btnAddPlan').classList.toggle('hidden', state.plans.length >= MAX_PLANS);
 }
 
-// Swipe left to reveal Delete; tap to edit. Used by the dose and plan lists.
+// Swipe left to reveal Delete; tap to edit.
 function bindSwipeList(el, onTap, onDelete) {
   let sx = 0, sy = 0, fg = null, dx = 0, mode = null, opened = null;
   const close = except => { if (opened && opened !== except) { opened.style.transform = ''; opened = null; } };
@@ -726,8 +730,8 @@ function bindSwipeList(el, onTap, onDelete) {
     }
   });
 }
-bindSwipeList($('#doseList'), id => openDose(id), id => deleteDose(id));
-bindSwipeList($('#planList'), id => openPlan(id), id => deletePlan(id));
+const route = (key, onPlan, onDose) => { const [kind, id] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)]; kind === 'plan' ? onPlan(id) : onDose(id); };
+bindSwipeList($('#plans'), k => route(k, openPlan, openDose), k => route(k, deletePlan, deleteDose));
 
 // ---------- toast ----------
 let toastTimer = null;
@@ -782,7 +786,7 @@ function renderChips() {
   $('#mgChips').innerHTML = CHIPS[formProduct].map(v => `<button class="chip" data-mg="${v}" aria-pressed="${v === cur}">${v}</button>`).join('');
 }
 function renderPlanChips() {
-  $('#dosePlansWrap').classList.toggle('hidden', !multi());
+  $('#dosePlansWrap').classList.toggle('hidden', !multi() || !!editingId);
   $('#dosePlans').innerHTML = state.plans.map(p =>
     `<button class="chip pchip" data-plan="${esc(p.id)}" aria-pressed="${formPlans.has(p.id)}"><i style="background:${planColor(p)}"></i>${esc(p.name)}</button>`).join('');
 }
@@ -797,8 +801,9 @@ $('#doseMg').addEventListener('input', renderChips);
 $('#pLdx').addEventListener('click', () => setProduct('ldx'));
 $('#pDex').addEventListener('click', () => setProduct('dex'));
 function openDose(id) {
-  editingId = id || null;
-  const d = id ? state.doses.find(x => x.id === id) : null;
+  const f = id ? findDose(id) : null;
+  editingId = f ? id : null;
+  const d = f && f.dose;
   $('#doseTitle').textContent = d ? 'Edit dose' : 'Add dose';
   $('#doseDelete').classList.toggle('hidden', !d);
   const ids = state.plans.map(p => p.id);
@@ -807,7 +812,6 @@ function openDose(id) {
     $('#doseMg').value = fmtMg(d.mg);
     $('#doseTime').value = d.time;
     $('#doseFood').checked = d.food;
-    formPlans = new Set(d.plans);
   } else {
     setProduct(state.last.product);
     $('#doseTime').value = nowHHMM();
@@ -823,36 +827,38 @@ $('#btnAdd').addEventListener('click', () => openDose());
 $('#doseSave').addEventListener('click', () => {
   const mg = num($('#doseMg').value, NaN);
   const time = $('#doseTime').value;
-  const plans = state.plans.map(p => p.id).filter(id => formPlans.has(id));
   if (!(mg > 0) || mg > 1000) { $('#doseMg').focus(); toast('Enter a dose in mg'); return; }
   if (!/^\d{2}:\d{2}/.test(time)) { toast('Choose a time'); return; }
-  if (!plans.length) { toast('Choose at least one plan'); return; }
-  const dose = { id: editingId || uid(), product: formProduct, mg, time: time.slice(0, 5), food: $('#doseFood').checked, plans };
-  const i = editingId ? state.doses.findIndex(x => x.id === editingId) : -1;
-  if (i >= 0) state.doses[i] = dose; else state.doses.push(dose);
+  const fields = { product: formProduct, mg, time: time.slice(0, 5), food: $('#doseFood').checked };
+  const f = editingId ? findDose(editingId) : null;
+  if (f) f.plan.doses[f.i] = { ...f.dose, ...fields };
+  else {
+    const targets = state.plans.filter(p => formPlans.has(p.id));
+    if (!targets.length) { toast('Choose at least one plan'); return; }
+    for (const p of targets) p.doses.push({ id: uid(), ...fields });
+    state.last.plans = targets.map(p => p.id);
+  }
   state.last.product = formProduct;
   state.last.mg[formProduct] = mg;
-  if (!editingId) state.last.plans = plans;
   save(); hideSheet(); render();
 });
 $('#doseDelete').addEventListener('click', () => { const id = editingId; hideSheet(); deleteDose(id); });
 function deleteDose(id) {
-  const i = state.doses.findIndex(x => x.id === id);
-  if (i < 0) return;
-  const [removed] = state.doses.splice(i, 1);
+  const f = findDose(id);
+  if (!f) return;
+  f.plan.doses.splice(f.i, 1);
   save(); render();
-  toast(`Deleted ${PRODUCTS[removed.product]} ${fmtMg(removed.mg)} mg`, 'Undo', () => {
-    removed.plans = removed.plans.filter(planById);
-    if (!removed.plans.length) return;
-    state.doses.push(removed); save(); render();
+  toast(`Deleted ${PRODUCTS[f.dose.product]} ${fmtMg(f.dose.mg)} mg`, 'Undo', () => {
+    const p = planById(f.plan.id); if (!p) return;
+    p.doses.push(f.dose); save(); render();
   });
 }
 $('#btnClear').addEventListener('click', () => {
-  const n = state.doses.length;
+  const n = allDoses().length;
   if (!n) return;
-  if (!confirm(`Clear all ${n} dose${n > 1 ? 's' : ''}?`)) return;
-  state.yesterday = clone(state.doses);
-  state.doses = [];
+  if (!confirm(`Clear all ${n} dose${n > 1 ? 's' : ''}${multi() ? ' from every plan' : ''}?`)) return;
+  state.yesterday = Object.fromEntries(state.plans.map(p => [p.id, clone(p.doses)]));
+  for (const p of state.plans) p.doses = [];
   save(); render();
 });
 
@@ -904,7 +910,7 @@ function renderSettings() {
     <div class="field ${s.carry ? '' : 'hidden'}" id="carryModeRow"><label for="set_carryMode">Yesterday’s doses</label>
       <select id="set_carryMode"><option value="repeat" ${s.carryMode === 'repeat' ? 'selected' : ''}>Same as each plan</option><option value="cleared" ${s.carryMode === 'cleared' ? 'selected' : ''}>Last cleared list</option></select></div>
   </div>
-  <p class="note">“Same as each plan” assumes you took the same doses yesterday. “Last cleared list” uses the doses you had before you last tapped Clear all${state.yesterday.length ? ` (${state.yesterday.map(d => `${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg ${fmtClock(toMin(d.time))}`).join(', ')})` : ' (none saved yet)'}.</p>
+  <p class="note">“Same as each plan” assumes you took the same doses yesterday. “Last cleared list” uses the doses you had before you last tapped Clear all${(n => n ? ` (${n} dose${n > 1 ? 's' : ''} saved)` : ' (none saved yet)')(Object.values(state.yesterday).reduce((n, l) => n + l.length, 0))}.</p>
   <button class="btn" id="btnReset">Reset model and chart to defaults</button>
   <h2 style="margin-top:20px">Your data</h2>
   <button class="btn" id="btnExport">Export backup (JSON)</button>
@@ -969,16 +975,16 @@ function openPlan(id) {
   const p = id ? planById(id) : null;
   $('#planTitle').textContent = p ? 'Rename plan' : 'Add plan';
   $('#planName').value = p ? p.name : `Plan ${state.plans.length + 1}`;
-  $('#planDelete').classList.toggle('hidden', !p);
+  $('#planDelete').classList.toggle('hidden', !p || !multi());
   copyFrom = '';
-  const showCopy = !p && state.doses.length > 0;
+  const showCopy = !p && allDoses().length > 0;
   $('#planCopyWrap').classList.toggle('hidden', !showCopy);
   if (showCopy) renderCopyChips();
   showSheet('#sheetPlan');
 }
 function renderCopyChips() {
   $('#planCopy').innerHTML = `<button class="chip" data-copy="" aria-pressed="${copyFrom === ''}">None</button>` +
-    state.plans.map(p => `<button class="chip pchip" data-copy="${esc(p.id)}" aria-pressed="${copyFrom === p.id}"><i style="background:${planColor(p)}"></i>${esc(p.name)}</button>`).join('');
+    state.plans.filter(p => p.doses.length).map(p => `<button class="chip pchip" data-copy="${esc(p.id)}" aria-pressed="${copyFrom === p.id}"><i style="background:${planColor(p)}"></i>${esc(p.name)}</button>`).join('');
 }
 $('#planCopy').addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) { copyFrom = b.dataset.copy; renderCopyChips(); } });
 $('#btnAddPlan').addEventListener('click', () => {
@@ -990,9 +996,8 @@ $('#planSave').addEventListener('click', () => {
   if (editingPlanId) {
     const p = planById(editingPlanId); if (p) p.name = name;
   } else {
-    const id = uid();
-    state.plans.push({ id, name });
-    if (copyFrom) for (const d of state.doses) if (d.plans.includes(copyFrom)) d.plans.push(id);
+    const src = copyFrom ? planById(copyFrom) : null;
+    state.plans.push({ id: uid(), name, doses: src ? src.doses.map(d => ({ ...d, id: uid() })) : [] });
   }
   save(); hideSheet(); render();
 });
@@ -1001,12 +1006,10 @@ $('#planDelete').addEventListener('click', () => { const id = editingPlanId; hid
 function deletePlan(id) {
   const p = planById(id);
   if (!p) return;
-  if (state.plans.length < 2) { render(); toast('You need at least one plan'); return; }
-  const snap = clone({ plans: state.plans, doses: state.doses, yesterday: state.yesterday, last: state.last });
+  if (!multi()) { render(); toast('You need at least one plan'); return; }
+  const snap = clone({ plans: state.plans, last: state.last, yesterday: state.yesterday });
   state.plans = state.plans.filter(x => x.id !== id);
-  const strip = list => list.map(d => ({ ...d, plans: d.plans.filter(x => x !== id) })).filter(d => d.plans.length);
-  state.doses = strip(state.doses);
-  state.yesterday = strip(state.yesterday);
+  delete state.yesterday[id];
   state.last.plans = state.last.plans.filter(x => x !== id);
   save(); render();
   toast(`Deleted “${p.name}”`, 'Undo', () => { Object.assign(state, snap); save(); render(); });
