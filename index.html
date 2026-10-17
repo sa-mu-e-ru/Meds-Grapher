@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meds Grapher</title>
+<meta name="description" content="Estimated plasma d-amphetamine concentration from Vyvanse and dexamfetamine IR doses.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meds Grapher">
+<meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<style>
+:root{
+  --bg:#f2f2f7; --card:#fff; --text:#000; --muted:#6c6c70; --sep:#d8d8dc; --fill:#e9e9ee;
+  --accent:#0a66d8; --accent-text:#fff; --danger:#d70015; --now:#d70015; --grid:#ececf0; --axis:#8e8e93;
+  --ldx:#7b3fe4; --dex:#e8590c;
+  --p0:#0a66d8; --p1:#c2255c; --p2:#2b8a3e; --p3:#a86b00;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+  --r:14px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000; --card:#1c1c1e; --text:#fff; --muted:#98989f; --sep:#38383a; --fill:#2c2c2e;
+    --accent:#4c9bff; --accent-text:#000; --danger:#ff453a; --now:#ff453a; --grid:#262628; --axis:#8e8e93;
+    --ldx:#b28cff; --dex:#ff9f5a;
+    --p0:#4c9bff; --p1:#ff6b9d; --p2:#5fd47a; --p3:#ffc94d;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:calc(var(--sat) + 4px) calc(var(--sar) + 16px) calc(var(--sab) + 96px) calc(var(--sal) + 16px);overscroll-behavior-y:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.hidden{display:none!important}
+header{display:flex;align-items:center;gap:8px;min-height:52px}
+header h1{font-size:22px;font-weight:700;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--accent)}
+.iconbtn:active{background:var(--fill)}
+.iconbtn svg{width:24px;height:24px}
+.planchip{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 6px}
+.planchip i{width:10px;height:10px;border-radius:5px;display:inline-block}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow)}
+.chartcard{position:relative;padding:8px 6px 4px}
+#chart{display:block;width:100%;height:clamp(220px,42vh,380px);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+#readout{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--sep);border-radius:10px;padding:6px 10px;font-size:13px;line-height:1.35;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.15);white-space:nowrap;font-variant-numeric:tabular-nums}
+#readout b{font-weight:600}
+#readout i{display:inline-block;width:8px;height:8px;border-radius:4px;margin-right:5px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;padding:2px 8px 6px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 0}
+.stat{background:var(--card);border-radius:12px;padding:10px 10px 9px;box-shadow:var(--shadow);min-width:0}
+.stat .k{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v{font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:12px;font-weight:500;color:var(--muted)}
+.cmp{margin-top:8px;font-size:13px;overflow-x:auto}
+.cmp table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.cmp td,.cmp th{padding:6px 8px;text-align:right;border-top:1px solid var(--sep);white-space:nowrap}
+.cmp th{color:var(--muted);font-weight:500;border-top:0}
+.cmp td:first-child,.cmp th:first-child{text-align:left}
+.cmp i{display:inline-block;width:8px;height:8px;border-radius:4px;margin-right:6px}
+h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:22px 4px 6px;display:flex;justify-content:space-between;align-items:center}
+h2 button{color:var(--accent);text-transform:none;letter-spacing:0;font-size:15px;font-weight:500;min-height:44px;padding:0 4px}
+h2 button.danger{color:var(--danger)}
+.list{overflow:hidden}
+.row{position:relative;overflow:hidden;border-top:1px solid var(--sep)}
+.row:first-child{border-top:0}
+.row .del{position:absolute;inset:0 0 0 auto;width:88px;background:var(--danger);color:#fff;font-weight:600}
+.row .fg{position:relative;background:var(--card);display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px;width:100%;text-align:left;transition:transform .2s ease;touch-action:pan-y}
+.row .fg.dragging{transition:none}
+.dot{width:12px;height:12px;border-radius:6px;flex:none}
+.row .main{flex:1;min-width:0}
+.row .t1{display:block;font-weight:600}
+.row .t2{display:block;font-size:13px;color:var(--muted)}
+.row .time{font-variant-numeric:tabular-nums;font-size:17px;color:var(--text)}
+.empty{padding:22px 16px;text-align:center;color:var(--muted)}
+.fab{position:fixed;left:calc(var(--sal) + 16px);right:calc(var(--sar) + 16px);bottom:calc(var(--sab) + 14px);height:56px;border-radius:16px;background:var(--accent);color:var(--accent-text);font-size:18px;font-weight:650;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(10,102,216,.35);z-index:5;max-width:640px;margin:0 auto}
+.fab:active{filter:brightness(.92)}
+main{max-width:640px;margin:0 auto}
+.banner{font-size:13px;color:var(--muted);background:var(--fill);border-radius:10px;padding:8px 12px;margin:6px 0}
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;opacity:0;transition:opacity .2s}
+.scrim.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg);border-radius:16px 16px 0 0;max-height:calc(100% - var(--sat) - 20px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s ease;max-width:640px;margin:0 auto}
+.sheet.show{transform:none}
+.sheet .bar{display:flex;align-items:center;padding:6px 8px 6px 16px;min-height:56px;border-bottom:1px solid var(--sep)}
+.sheet .bar h3{flex:1;margin:0;font-size:17px;font-weight:650;text-align:center}
+.sheet .bar button{min-width:64px;min-height:44px;color:var(--accent);font-size:17px}
+.sheet .bar button.strong{font-weight:650}
+.sheet .body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px calc(var(--sar) + 16px) calc(var(--sab) + 24px) calc(var(--sal) + 16px)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
+.seg button{min-height:44px;border-radius:8px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.group{background:var(--card);border-radius:12px;margin:14px 0;overflow:hidden}
+.field{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 14px;border-top:1px solid var(--sep)}
+.field:first-child{border-top:0}
+.field label,.field .lbl{flex:1;min-width:0}
+.field .hint{display:block;font-size:12px;color:var(--muted)}
+.field input[type=number],.field input[type=time],.field input[type=text],.field select{font-size:17px;border:0;background:transparent;text-align:right;min-height:44px;width:5em;color:var(--accent);outline:none}
+.field input[type=text]{width:12em}
+.field input[type=time]{width:auto;min-width:6.5em;-webkit-appearance:none;appearance:none}
+.unit{color:var(--muted);font-size:15px;min-width:2.5em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 4px}
+.chip{min-height:40px;min-width:52px;padding:0 12px;border-radius:20px;background:var(--fill);font-weight:600;font-variant-numeric:tabular-nums}
+.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-text)}
+.switch{position:relative;width:51px;height:31px;flex:none}
+.switch input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;z-index:1;cursor:pointer}
+.switch span{position:absolute;inset:0;background:var(--fill);border-radius:16px;transition:background .2s}
+.switch span::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.switch input:checked+span{background:#34c759}
+.switch input:checked+span::after{transform:translateX(20px)}
+.btn{display:block;width:100%;min-height:50px;border-radius:12px;background:var(--card);color:var(--accent);font-size:17px;font-weight:500;margin:10px 0}
+.btn.primary{background:var(--accent);color:var(--accent-text);font-weight:650}
+.btn.danger{color:var(--danger)}
+.note{font-size:13px;color:var(--muted);margin:6px 4px 14px}
+.prose{font-size:15px}
+.prose h4{margin:22px 0 6px;font-size:17px}
+.prose p,.prose li{margin:6px 0}
+.prose code,.prose .eq{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.prose .eq{display:block;background:var(--card);border-radius:10px;padding:10px 12px;margin:8px 0;overflow-x:auto;white-space:pre}
+.prose table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;background:var(--card);border-radius:10px;overflow:hidden}
+.prose th,.prose td{padding:6px 8px;border-top:1px solid var(--sep);text-align:left;vertical-align:top}
+.prose th{border-top:0;color:var(--muted);font-weight:500}
+.tablewrap{overflow-x:auto;border-radius:10px}
+.ok{color:#248a3d}.warn{color:#b25000}
+@media (prefers-color-scheme: dark){.ok{color:#30d158}.warn{color:#ffb340}}
+.disclaimer{background:var(--fill);border-radius:12px;padding:12px 14px;font-size:14px}
+.planrow{display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 10px 6px 14px;border-top:1px solid var(--sep)}
+.planrow:first-child{border-top:0}
+.planrow .nm{flex:1;min-width:0;text-align:left;min-height:44px}
+.planrow .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.planrow .nm small{color:var(--muted)}
+.planrow .sw{width:12px;height:12px;border-radius:6px;flex:none}
+.planrow .act{font-size:12px;color:var(--accent);font-weight:600}
+.small{min-height:44px;padding:0 10px;color:var(--accent);font-size:15px}
+.small.danger{color:var(--danger)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 82px);z-index:30;background:#1c1c1e;color:#fff;border-radius:12px;padding:6px 6px 6px 14px;display:flex;align-items:center;gap:8px;font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
+@media (prefers-color-scheme: dark){.toast{background:#3a3a3c}}
+.toast button{color:#6cb4ff;font-weight:650;min-height:40px;padding:0 10px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Meds Grapher</h1>
+    <button class="iconbtn" id="btnPlans" aria-label="Compare plans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5-9 8-9s4 5 7 5 3-2 3-2"/><path d="M3 20c3-3 6-6 9-6s4 2 6 2 3-1 3-1" opacity=".5"/></svg></button>
+    <button class="iconbtn" id="btnAbout" aria-label="About the model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg></button>
+    <button class="iconbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <div id="storageBanner" class="banner hidden">Storage is unavailable, so changes won’t be saved after you close the app.</div>
+  <div id="planChip" class="planchip hidden"></div>
+  <div class="card chartcard">
+    <canvas id="chart" aria-label="Estimated d-amphetamine concentration chart" role="img"></canvas>
+    <div id="readout" class="hidden"></div>
+    <div id="legend" class="legend hidden"></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Cmax</div><div class="v" id="sCmax">—</div></div>
+    <div class="stat"><div class="k">Peak at</div><div class="v" id="sTmax">—</div></div>
+    <div class="stat"><div class="k" id="sThrK">Below 20 ng/mL</div><div class="v" id="sThr">—</div></div>
+  </div>
+  <div id="cmp" class="cmp card hidden"></div>
+
+  <h2><span>Doses</span><button id="btnClear" class="danger">Clear all</button></h2>
+  <div class="card list" id="doseList"></div>
+  <p class="note" id="listNote">Tap a dose to edit. Swipe left to delete.</p>
+</main>
+
+<button class="fab" id="btnAdd"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add dose</button>
+
+<div class="scrim hidden" id="scrim"></div>
+
+<!-- Dose sheet -->
+<section class="sheet hidden" id="sheetDose" role="dialog" aria-modal="true" aria-labelledby="doseTitle">
+  <div class="bar"><button data-close>Cancel</button><h3 id="doseTitle">Add dose</h3><button class="strong" id="doseSave">Save</button></div>
+  <div class="body">
+    <div class="seg" role="group" aria-label="Product">
+      <button id="pLdx" aria-pressed="true">Vyvanse</button>
+      <button id="pDex" aria-pressed="false">Dex IR</button>
+    </div>
+    <div class="group">
+      <div class="field"><label for="doseMg">Dose</label><input id="doseMg" type="number" inputmode="decimal" min="0" step="any"><span class="unit">mg</span></div>
+      <div class="field" style="display:block;padding-top:4px;padding-bottom:8px"><div class="chips" id="mgChips"></div></div>
+      <div class="field"><label for="doseTime">Time</label><input id="doseTime" type="time" required></div>
+      <div class="field"><label for="doseFood">Taken with food<span class="hint" id="foodHint"></span></label><span class="switch"><input type="checkbox" id="doseFood"><span></span></span></div>
+    </div>
+    <button class="btn danger hidden" id="doseDelete">Delete dose</button>
+  </div>
+</section>
+
+<!-- Settings sheet -->
+<section class="sheet hidden" id="sheetSettings" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="bar"><span style="min-width:64px"></span><h3 id="setTitle">Settings</h3><button class="strong" data-close>Done</button></div>
+  <div class="body" id="settingsBody"></div>
+</section>
+
+<!-- Plans sheet -->
+<section class="sheet hidden" id="sheetPlans" role="dialog" aria-modal="true" aria-labelledby="plTitle">
+  <div class="bar"><span style="min-width:64px"></span><h3 id="plTitle">Compare plans</h3><button class="strong" data-close>Done</button></div>
+  <div class="body" id="plansBody"></div>
+</section>
+
+<!-- About sheet -->
+<section class="sheet hidden" id="sheetAbout" role="dialog" aria-modal="true" aria-labelledby="abTitle">
+  <div class="bar"><span style="min-width:64px"></span><h3 id="abTitle">About the model</h3><button class="strong" data-close>Done</button></div>
+  <div class="body prose" id="aboutBody"></div>
+</section>
+
+<div id="toast" class="toast hidden" role="status"><span id="toastMsg"></span><button id="toastBtn"></button></div>
+<input type="file" id="importFile" accept="application/json,.json" class="hidden">
+
+<script id="model">
+/*MODEL-START*/
+const Model = (() => {
+  // ---- Molecular weights from atomic weights (IUPAC standard values, g/mol) ----
+  const ATOM = { C: 12.011, H: 1.008, N: 14.007, O: 15.999, S: 32.06 };
+  const mw = f => Object.entries(f).reduce((s, [el, n]) => s + ATOM[el] * n, 0);
+  const F = {
+    amph: { C: 9, H: 13, N: 1 },          // d-amphetamine base
+    ldx: { C: 15, H: 25, N: 3, O: 1 },    // lisdexamfetamine base
+    msa: { C: 1, H: 4, O: 3, S: 1 },      // methanesulfonic acid
+    h2so4: { H: 2, S: 1, O: 4 }           // sulfuric acid
+  };
+  const MW = {
+    amph: mw(F.amph), ldx: mw(F.ldx), msa: mw(F.msa), h2so4: mw(F.h2so4)
+  };
+  MW.ldxDimesylate = MW.ldx + 2 * MW.msa;            // C15H25N3O·2CH4O3S
+  MW.dexSulfate = 2 * MW.amph + MW.h2so4;            // (C9H13N)2·H2SO4
+  // 1 mol LDX releases 1 mol d-amphetamine (+ L-lysine)
+  const FACTOR = { ldx: MW.amph / MW.ldxDimesylate, dex: (2 * MW.amph) / MW.dexSulfate };
+
+  const DEFAULTS = {
+    weight: 70,        // kg
+    halfLife: 11,      // h, d-amphetamine elimination
+    vd: 3.5,           // L/kg
+    dexKa: 1.0,        // 1/h absorption, dex IR
+    dexLag: 0,         // h
+    dexF: 1.0,         // fraction of d-amphetamine base reaching circulation
+    dexFoodLag: 0.5,   // h extra lag with food (assumption, unsourced)
+    ldxKa: 1.4,        // 1/h absorption of intact LDX
+    ldxKconv: 1.15,    // 1/h LDX -> d-amphetamine (RBC hydrolysis); t1/2 = 0.6 h
+    ldxF: 0.90,        // fitted scaling (see About)
+    ldxFoodLag: 0.9    // h extra lag with food
+  };
+
+  // Amount in the last compartment of a linear first-order chain after a unit dose
+  // into the first one. k = [k1, k2, ..., kn], kn is the elimination rate of the last.
+  // A_n(t) = (k1..k_{n-1}) * sum_j exp(-kj t) / prod_{l!=j}(kl - kj)
+  function chain(t, k) {
+    if (t <= 0) return 0;
+    k = k.slice();
+    for (let i = 1; i < k.length; i++)
+      for (let j = 0; j < i; j++)
+        if (Math.abs(k[i] - k[j]) < 1e-4 * Math.max(k[i], k[j])) k[i] *= 1.001; // avoid singularity
+    let pre = 1;
+    for (let i = 0; i < k.length - 1; i++) pre *= k[i];
+    let s = 0;
+    for (let j = 0; j < k.length; j++) {
+      let d = 1;
+      for (let l = 0; l < k.length; l++) if (l !== j) d *= (k[l] - k[j]);
+      s += Math.exp(-k[j] * t) / d;
+    }
+    return Math.max(0, pre * s);
+  }
+
+  // mg of d-amphetamine base in the central compartment, t hours after one dose
+  function amount(dose, tH, p) {
+    const ke = Math.LN2 / p.halfLife;
+    if (dose.product === 'dex') {
+      const lag = p.dexLag + (dose.food ? p.dexFoodLag : 0);
+      return dose.mg * FACTOR.dex * p.dexF * chain(tH - lag, [p.dexKa, ke]);
+    }
+    const lag = dose.food ? p.ldxFoodLag : 0;
+    return dose.mg * FACTOR.ldx * p.ldxF * chain(tH - lag, [p.ldxKa, p.ldxKconv, ke]);
+  }
+
+  // Concentration (ng/mL) at time tMin (minutes); doses carry .t in minutes. Superposition.
+  function conc(doses, tMin, p) {
+    let a = 0;
+    for (const d of doses) a += amount(d, (tMin - d.t) / 60, p);
+    return a / (p.vd * p.weight) * 1000; // mg/L -> ng/mL
+  }
+
+  function singlePK(product, mg, food, p) {
+    const d = [{ product, mg, food, t: 0 }];
+    let cmax = 0, tmax = 0;
+    for (let m = 0; m <= 24 * 60; m += 1) {
+      const c = conc(d, m, p);
+      if (c > cmax) { cmax = c; tmax = m; }
+    }
+    return { tmax: tmax / 60, cmax };
+  }
+
+  // Published reference values for a single dose in adults (see About for status of each)
+  const REFS = [
+    { product: 'ldx', mg: 30, food: false, tmax: 3.8, cmax: 26.8, note: 'Tmax: label value at 70 mg applied; Cmax: 44.6 × 30/50 (dose-proportional, derived)' },
+    { product: 'ldx', mg: 50, food: false, tmax: 3.8, cmax: 44.6, note: 'Cmax: Ermer 2010; Tmax: label value at 70 mg applied' },
+    { product: 'ldx', mg: 70, food: false, tmax: 3.8, cmax: 62.4, note: 'Tmax: label / Krishnan 2008; Cmax: 44.6 × 70/50 (derived)' },
+    { product: 'ldx', mg: 70, food: true, tmax: 4.7, cmax: 62.4, note: 'Tmax with high-fat meal: label; Cmax unchanged by food: label' },
+    { product: 'dex', mg: 5, food: false, tmax: 3, cmax: 12.2, note: 'Derived: 36.6 × 5/15 (assumes linearity)' },
+    { product: 'dex', mg: 10, food: false, tmax: 3, cmax: 24.4, note: 'Derived: 36.6 × 10/15 (assumes linearity)' },
+    { product: 'dex', mg: 15, food: false, tmax: 3, cmax: 36.6, note: 'Dexedrine label: 3 × 5 mg tablets, n = 12' }
+  ];
+
+  function selfCheck(p = DEFAULTS) {
+    return REFS.map(r => ({ ...r, model: singlePK(r.product, r.mg, r.food, { ...p, weight: 70 }) }));
+  }
+
+  return { ATOM, F, MW, FACTOR, DEFAULTS, chain, amount, conc, singlePK, REFS, selfCheck };
+})();
+if (typeof module !== 'undefined') module.exports = Model;
+/*MODEL-END*/
+</script>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const KEY = 'medsGrapher.v1';
+const MAX_VISIBLE = 4;
+const PRODUCTS = { ldx: 'Vyvanse', dex: 'Dex IR' };
+const CHIPS = { ldx: [20, 30, 40, 50, 60, 70], dex: [2.5, 5, 10, 15, 20] };
+const CHART_DEFAULTS = { startHour: 6, endHour: 26, threshold: 20, carry: false, carryMode: 'repeat' };
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clone = o => JSON.parse(JSON.stringify(o));
+const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) ? n : d; };
+
+// ---------- state & storage ----------
+let storageOK = true;
+function defaultState() {
+  const id = uid();
+  return {
+    v: 1,
+    plans: [{ id, name: 'Today', doses: [], visible: true }],
+    activeId: id,
+    settings: { ...Model.DEFAULTS, ...CHART_DEFAULTS },
+    last: { product: 'ldx', mg: { ldx: 30, dex: 5 } },
+    yesterday: []
+  };
+}
+function sanitizeDose(d) {
+  if (!d || typeof d !== 'object') return null;
+  const product = d.product === 'dex' ? 'dex' : d.product === 'ldx' ? 'ldx' : null;
+  const mg = num(d.mg, NaN);
+  const time = typeof d.time === 'string' && /^\d{1,2}:\d{2}$/.test(d.time) ? d.time.padStart(5, '0') : null;
+  if (!product || !(mg > 0) || !time) return null;
+  return { id: typeof d.id === 'string' ? d.id : uid(), product, mg, time, food: !!d.food };
+}
+function sanitize(s) {
+  const base = defaultState();
+  if (!s || typeof s !== 'object') return base;
+  const out = base;
+  if (Array.isArray(s.plans) && s.plans.length) {
+    out.plans = s.plans.filter(p => p && typeof p === 'object').map(p => ({
+      id: typeof p.id === 'string' ? p.id : uid(),
+      name: typeof p.name === 'string' && p.name.trim() ? p.name.slice(0, 80) : 'Plan',
+      doses: Array.isArray(p.doses) ? p.doses.map(sanitizeDose).filter(Boolean) : [],
+      visible: p.visible !== false
+    }));
+    if (!out.plans.length) out.plans = base.plans;
+  }
+  out.activeId = out.plans.some(p => p.id === s.activeId) ? s.activeId : out.plans[0].id;
+  const st = s.settings && typeof s.settings === 'object' ? s.settings : {};
+  for (const k of Object.keys(out.settings)) {
+    if (typeof out.settings[k] === 'number') {
+      const v = num(st[k], out.settings[k]);
+      out.settings[k] = v;
+    } else if (typeof out.settings[k] === 'boolean') out.settings[k] = typeof st[k] === 'boolean' ? st[k] : out.settings[k];
+    else if (k === 'carryMode') out.settings[k] = st[k] === 'cleared' ? 'cleared' : 'repeat';
+  }
+  if (s.last && typeof s.last === 'object') {
+    out.last.product = s.last.product === 'dex' ? 'dex' : 'ldx';
+    if (s.last.mg) {
+      out.last.mg.ldx = num(s.last.mg.ldx, out.last.mg.ldx);
+      out.last.mg.dex = num(s.last.mg.dex, out.last.mg.dex);
+    }
+  }
+  out.yesterday = Array.isArray(s.yesterday) ? s.yesterday.map(sanitizeDose).filter(Boolean) : [];
+  return out;
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? sanitize(JSON.parse(raw)) : defaultState();
+  } catch (e) { storageOK = false; return defaultState(); }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOK = true; }
+  catch (e) { storageOK = false; }
+  $('#storageBanner').classList.toggle('hidden', storageOK);
+}
+let state = load();
+try { localStorage.setItem(KEY + '.probe', '1'); localStorage.removeItem(KEY + '.probe'); } catch (e) { storageOK = false; }
+
+const active = () => state.plans.find(p => p.id === state.activeId) || state.plans[0];
+const visiblePlans = () => state.plans.filter(p => p.id === state.activeId || p.visible).slice(0, MAX_VISIBLE);
+const planColor = p => cssVar('--p' + (state.plans.indexOf(p) % 4));
+const params = () => state.settings;
+
+// ---------- time helpers ----------
+const toMin = hhmm => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+const nowHHMM = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const fmtClock = min => {
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  const d = new Date(2000, 0, 1, Math.floor(m / 60), m % 60);
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+const fmtHourTick = min => {
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  const d = new Date(2000, 0, 1, Math.floor(m / 60), 0);
+  return d.toLocaleTimeString([], { hour: 'numeric' }).replace(/\s?([AP])M/i, (x, a) => a.toLowerCase());
+};
+const startMin = () => params().startHour * 60;
+const endMin = () => params().endHour * 60;
+// Times earlier than the chart start are treated as after midnight (next day).
+const placeMin = hhmm => { let t = toMin(hhmm); if (t < startMin()) t += 1440; return t; };
+const nowMin = () => { const d = new Date(); let t = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; if (t < startMin()) t += 1440; return t; };
+
+function placedDoses(plan) {
+  let ds = plan.doses.map(d => ({ ...d, t: placeMin(d.time) }));
+  if (params().carry) {
+    const prev = params().carryMode === 'cleared' ? state.yesterday : plan.doses;
+    ds = ds.concat(prev.map(d => ({ ...d, t: placeMin(d.time) - 1440, carry: true })));
+  }
+  return ds;
+}
+
+// ---------- computation ----------
+function series(plan) {
+  const ds = placedDoses(plan), p = params(), s0 = startMin(), s1 = endMin();
+  const pts = [];
+  for (let t = s0; t <= s1 + 0.01; t += 2) pts.push([t, Model.conc(ds, t, p)]);
+  let cmax = 0, tmax = null;
+  for (const [t, c] of pts) if (c > cmax) { cmax = c; tmax = t; }
+  let below = null;
+  if (tmax !== null && cmax > p.threshold) {
+    for (let t = tmax; t <= s1 + 24 * 60; t += 2) {
+      if (Model.conc(ds, t, p) < p.threshold) { below = t; break; }
+    }
+  }
+  return { plan, ds, pts, cmax, tmax, below, color: planColor(plan) };
+}
+
+// ---------- chart ----------
+let cursorT = null, readoutTimer = null, lastSeries = [];
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function niceStep(max) {
+  const raw = max / 5, pow = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / pow;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * pow;
+}
+const PAD = { l: 38, r: 10, t: 14, b: 40 };
+function geom(cv) {
+  const W = cv.clientWidth, H = cv.clientHeight;
+  return { W, H, x0: PAD.l, x1: W - PAD.r, y0: PAD.t, y1: H - PAD.b };
+}
+function drawChart() {
+  const cv = $('#chart');
+  const dpr = window.devicePixelRatio || 1;
+  const { W, H, x0, x1, y0, y1 } = geom(cv);
+  if (!W || !H) return;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const s0 = startMin(), s1 = endMin(), p = params();
+  lastSeries = visiblePlans().map(series);
+  const maxC = Math.max(p.threshold * 1.15, 10, ...lastSeries.map(s => s.cmax * 1.12));
+  const step = niceStep(maxC), yMax = Math.ceil(maxC / step) * step;
+  const X = t => x0 + (t - s0) / (s1 - s0) * (x1 - x0);
+  const Y = c => y1 - c / yMax * (y1 - y0);
+  const text = cssVar('--muted'), grid = cssVar('--grid'), axis = cssVar('--axis');
+  g.font = '11px -apple-system, system-ui, sans-serif';
+  g.lineWidth = 1;
+  // y grid
+  g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillStyle = text;
+  for (let v = 0; v <= yMax + 1e-9; v += step) {
+    const y = Math.round(Y(v)) + .5;
+    g.strokeStyle = grid; g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
+    g.fillText(String(+v.toFixed(1)), x0 - 6, y);
+  }
+  g.save(); g.translate(10, (y0 + y1) / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText('ng/mL', 0, 0); g.restore();
+  // x ticks
+  const span = (s1 - s0) / 60;
+  const every = W < 360 ? (span > 16 ? 4 : 3) : (span > 18 ? 3 : 2);
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (let h = Math.ceil(s0 / 60); h * 60 <= s1; h++) {
+    const x = Math.round(X(h * 60)) + .5;
+    if (h % every === 0) {
+      g.strokeStyle = grid; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke();
+      g.fillStyle = text; g.fillText(fmtHourTick(h * 60), x, y1 + 18);
+    }
+    g.strokeStyle = axis; g.beginPath(); g.moveTo(x, y1); g.lineTo(x, y1 + (h % every === 0 ? 5 : 3)); g.stroke();
+  }
+  g.strokeStyle = axis; g.beginPath(); g.moveTo(x0, y1 + .5); g.lineTo(x1, y1 + .5); g.stroke();
+  // threshold
+  if (p.threshold > 0 && p.threshold <= yMax) {
+    g.setLineDash([3, 4]); g.strokeStyle = axis;
+    const y = Math.round(Y(p.threshold)) + .5;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); g.setLineDash([]);
+    g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillStyle = text;
+    g.fillText(p.threshold + ' ng/mL', x1 - 2, y - 2);
+  }
+  // curves (active plan drawn last, on top)
+  const ordered = lastSeries.slice().sort((a, b) => (a.plan.id === state.activeId) - (b.plan.id === state.activeId));
+  g.save(); g.beginPath(); g.rect(x0, y0 - 2, x1 - x0, y1 - y0 + 2); g.clip();
+  for (const s of ordered) {
+    const isActive = s.plan.id === state.activeId;
+    if (isActive && lastSeries.length === 1) {
+      const grad = g.createLinearGradient(0, y0, 0, y1);
+      grad.addColorStop(0, hexA(s.color, .28)); grad.addColorStop(1, hexA(s.color, .02));
+      g.beginPath(); g.moveTo(X(s.pts[0][0]), Y(0));
+      for (const [t, c] of s.pts) g.lineTo(X(t), Y(c));
+      g.lineTo(X(s.pts[s.pts.length - 1][0]), Y(0)); g.closePath(); g.fillStyle = grad; g.fill();
+    }
+    g.beginPath();
+    s.pts.forEach(([t, c], i) => i ? g.lineTo(X(t), Y(c)) : g.moveTo(X(t), Y(c)));
+    g.strokeStyle = s.color; g.lineWidth = isActive ? 2.5 : 2; g.lineJoin = 'round';
+    if (!isActive) g.setLineDash([6, 4]);
+    g.stroke(); g.setLineDash([]);
+  }
+  g.restore();
+  // dose markers on x-axis
+  const markerPlans = lastSeries.length > 1 ? lastSeries : lastSeries.slice(0, 1);
+  markerPlans.forEach((s, i) => {
+    for (const d of s.ds) {
+      if (d.carry || d.t < s0 || d.t > s1) continue;
+      const x = X(d.t), y = y1 + 1 + i * 0;
+      g.fillStyle = cssVar(d.product === 'ldx' ? '--ldx' : '--dex');
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x - 5, y + 9); g.lineTo(x + 5, y + 9); g.closePath(); g.fill();
+      if (lastSeries.length > 1) { g.strokeStyle = s.color; g.lineWidth = 1.5; g.stroke(); g.lineWidth = 1; }
+    }
+  });
+  // now line
+  const nm = nowMin();
+  if (nm >= s0 && nm <= s1) {
+    const x = Math.round(X(nm)) + .5;
+    g.strokeStyle = cssVar('--now'); g.lineWidth = 1.5; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); g.setLineDash([]);
+    g.fillStyle = cssVar('--now'); g.textAlign = 'center'; g.textBaseline = 'bottom';
+    g.font = '600 10px -apple-system, system-ui, sans-serif';
+    g.fillText('now', Math.min(Math.max(x, x0 + 12), x1 - 12), y0 - 1);
+  }
+  // cursor
+  if (cursorT !== null) {
+    const x = Math.round(X(cursorT)) + .5;
+    g.strokeStyle = cssVar('--text'); g.lineWidth = 1; g.globalAlpha = .5;
+    g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); g.globalAlpha = 1;
+    for (const s of lastSeries) {
+      const c = Model.conc(s.ds, cursorT, p);
+      g.fillStyle = s.color; g.beginPath(); g.arc(X(cursorT), Y(c), 4.5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = cssVar('--card'); g.lineWidth = 2; g.stroke(); g.lineWidth = 1;
+    }
+  }
+  if (!active().doses.length && lastSeries.length === 1 && !(p.carry && lastSeries[0].ds.length)) {
+    g.fillStyle = text; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '15px -apple-system, system-ui, sans-serif';
+    g.fillText('Tap “Add dose” to start', (x0 + x1) / 2, (y0 + y1) / 2);
+  }
+}
+function hexA(c, a) {
+  const m = /^#([0-9a-f]{6})$/i.exec(c);
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function setCursorFromEvent(e) {
+  const cv = $('#chart'), r = cv.getBoundingClientRect(), { x0, x1 } = geom(cv);
+  const x = Math.min(Math.max(e.clientX - r.left, x0), x1);
+  cursorT = startMin() + (x - x0) / (x1 - x0) * (endMin() - startMin());
+  cursorT = Math.round(cursorT / 5) * 5;
+  showReadout(); drawChart();
+}
+function showReadout() {
+  const el = $('#readout');
+  if (cursorT === null) { el.classList.add('hidden'); return; }
+  const lines = lastSeries.map(s => {
+    const c = Model.conc(s.ds, cursorT, params());
+    const name = lastSeries.length > 1 ? esc(s.plan.name) + ': ' : '';
+    return `<div><i style="background:${s.color}"></i>${name}<b>${c.toFixed(1)}</b> ng/mL</div>`;
+  });
+  el.innerHTML = `<div style="color:var(--muted)">${fmtClock(cursorT)}${cursorT >= 1440 ? ' (+1)' : ''}</div>` + lines.join('');
+  el.classList.remove('hidden');
+}
+(function bindChart() {
+  const cv = $('#chart');
+  let down = false;
+  cv.addEventListener('pointerdown', e => { down = true; clearTimeout(readoutTimer); setCursorFromEvent(e); });
+  cv.addEventListener('pointermove', e => { if (down || e.pointerType === 'mouse') setCursorFromEvent(e); });
+  const end = () => {
+    down = false; clearTimeout(readoutTimer);
+    readoutTimer = setTimeout(() => { cursorT = null; showReadout(); drawChart(); }, 3500);
+  };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') end(); });
+})();
+
+// ---------- rendering ----------
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtMg = mg => (+mg).toString();
+const fmtT = t => t === null ? '—' : fmtClock(t) + (t >= 1440 ? '<small> +1</small>' : '');
+
+function render() {
+  drawChart();
+  showReadout();
+  renderStats();
+  renderList();
+  renderHeader();
+}
+function renderHeader() {
+  const chip = $('#planChip');
+  if (state.plans.length > 1) {
+    const a = active();
+    chip.innerHTML = `<i style="background:${planColor(a)}"></i>Editing: ${esc(a.name)}`;
+    chip.classList.remove('hidden');
+  } else chip.classList.add('hidden');
+  const lg = $('#legend');
+  if (lastSeries.length > 1) {
+    lg.innerHTML = lastSeries.map(s => `<span><i style="background:${s.color}"></i>${esc(s.plan.name)}</span>`).join('');
+    lg.classList.remove('hidden');
+  } else lg.classList.add('hidden');
+}
+function renderStats() {
+  const p = params();
+  const s = lastSeries.find(x => x.plan.id === state.activeId) || lastSeries[0];
+  $('#sThrK').textContent = `Below ${+p.threshold} ng/mL`;
+  if (!s || s.cmax < 0.05) {
+    $('#sCmax').innerHTML = '—'; $('#sTmax').innerHTML = '—'; $('#sThr').innerHTML = '—';
+  } else {
+    $('#sCmax').innerHTML = `${s.cmax.toFixed(1)}<small> ng/mL</small>`;
+    $('#sTmax').innerHTML = fmtT(s.tmax);
+    $('#sThr').innerHTML = s.cmax <= p.threshold ? '<small>never above</small>' : s.below === null ? '<small>&gt; 24 h</small>' : fmtT(s.below);
+  }
+  const cmp = $('#cmp');
+  if (lastSeries.length > 1) {
+    cmp.innerHTML = `<table><tr><th>Plan</th><th>Cmax</th><th>Peak</th><th>&lt; ${+p.threshold}</th></tr>` +
+      lastSeries.map(x => `<tr><td><i style="background:${x.color}"></i>${esc(x.plan.name)}</td><td>${x.cmax.toFixed(1)}</td><td>${x.cmax < .05 ? '—' : fmtT(x.tmax)}</td><td>${x.cmax <= p.threshold ? '—' : x.below === null ? '&gt;24 h' : fmtT(x.below)}</td></tr>`).join('') + '</table>';
+    cmp.classList.remove('hidden');
+  } else cmp.classList.add('hidden');
+}
+function renderList() {
+  const plan = active(), el = $('#doseList');
+  const doses = plan.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time));
+  $('#btnClear').classList.toggle('hidden', !doses.length);
+  $('#listNote').classList.toggle('hidden', !doses.length);
+  if (!doses.length) {
+    el.innerHTML = `<div class="empty">No doses yet.</div>`;
+    return;
+  }
+  el.innerHTML = doses.map(d => `
+    <div class="row" data-id="${esc(d.id)}">
+      <button class="del" data-del="${esc(d.id)}" tabindex="-1">Delete</button>
+      <button class="fg" data-edit="${esc(d.id)}">
+        <span class="dot" style="background:var(--${d.product})"></span>
+        <span class="main"><span class="t1">${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg</span>
+          <span class="t2">${d.food ? 'With food' : ''}</span></span>
+        <span class="time">${fmtClock(toMin(d.time))}</span>
+      </button>
+    </div>`).join('');
+  el.querySelectorAll('.t2').forEach(t => { if (!t.textContent) t.remove(); });
+}
+
+// swipe to delete
+(function bindList() {
+  const el = $('#doseList');
+  let sx = 0, sy = 0, fg = null, dx = 0, mode = null, opened = null;
+  const close = (except) => { if (opened && opened !== except) { opened.style.transform = ''; opened = null; } };
+  el.addEventListener('touchstart', e => {
+    const f = e.target.closest('.fg'); if (!f) return;
+    close(f); fg = f; sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; mode = null;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (!fg) return;
+    const mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
+    if (!mode) { if (Math.abs(mx) > 8 || Math.abs(my) > 8) mode = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'; else return; }
+    if (mode !== 'h') return;
+    const base = opened === fg ? -88 : 0;
+    dx = Math.min(0, Math.max(-120, base + mx));
+    fg.classList.add('dragging'); fg.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+  el.addEventListener('touchend', () => {
+    if (!fg) return;
+    fg.classList.remove('dragging');
+    if (mode === 'h') {
+      if (dx < -50) { fg.style.transform = 'translateX(-88px)'; opened = fg; }
+      else { fg.style.transform = ''; if (opened === fg) opened = null; }
+      const f = fg; f.dataset.swiped = '1'; setTimeout(() => delete f.dataset.swiped, 60);
+    }
+    fg = null;
+  });
+  el.addEventListener('click', e => {
+    const del = e.target.closest('[data-del]');
+    if (del) { deleteDose(del.dataset.del); return; }
+    const ed = e.target.closest('[data-edit]');
+    if (ed) {
+      if (ed.dataset.swiped) return;
+      if (opened) { const wasThis = opened === ed; close(); if (wasThis) return; }
+      openDose(ed.dataset.edit);
+    }
+  });
+})();
+
+// ---------- toast ----------
+let toastTimer = null;
+function toast(msg, btnText, onBtn, ms = 4000) {
+  const t = $('#toast');
+  $('#toastMsg').textContent = msg;
+  const b = $('#toastBtn');
+  b.textContent = btnText || ''; b.classList.toggle('hidden', !btnText);
+  b.onclick = () => { t.classList.add('hidden'); onBtn && onBtn(); };
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  if (ms) toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+}
+
+// ---------- sheets ----------
+let openSheet = null;
+function showSheet(id) {
+  if (openSheet) hideSheet(true);
+  const sc = $('#scrim'), sh = $(id);
+  sc.classList.remove('hidden'); sh.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => { sc.classList.add('show'); sh.classList.add('show'); }));
+  openSheet = sh;
+  sh.querySelector('.body').scrollTop = 0;
+}
+function hideSheet(instant) {
+  if (!openSheet) return;
+  const sc = $('#scrim'), sh = openSheet;
+  openSheet = null;
+  sc.classList.remove('show'); sh.classList.remove('show');
+  if (document.activeElement) document.activeElement.blur();
+  const done = () => { if (!sh.classList.contains('show')) sh.classList.add('hidden'); if (!openSheet) sc.classList.add('hidden'); };
+  instant ? done() : setTimeout(done, 260);
+}
+$('#scrim').addEventListener('click', () => hideSheet());
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => hideSheet()));
+
+// ---------- dose form ----------
+let editingId = null, formProduct = 'ldx';
+function setProduct(prod, keepMg) {
+  formProduct = prod;
+  $('#pLdx').setAttribute('aria-pressed', prod === 'ldx');
+  $('#pDex').setAttribute('aria-pressed', prod === 'dex');
+  if (!keepMg) $('#doseMg').value = fmtMg(state.last.mg[prod]);
+  const p = params();
+  $('#foodHint').textContent = prod === 'ldx'
+    ? `Delays the peak by ~${+p.ldxFoodLag} h; peak height unchanged`
+    : `Delays the peak by ~${+p.dexFoodLag} h (model assumption)`;
+  renderChips();
+}
+function renderChips() {
+  const cur = num($('#doseMg').value, NaN);
+  $('#mgChips').innerHTML = CHIPS[formProduct].map(v => `<button class="chip" data-mg="${v}" aria-pressed="${v === cur}">${v}</button>`).join('');
+}
+$('#mgChips').addEventListener('click', e => { const b = e.target.closest('[data-mg]'); if (b) { $('#doseMg').value = b.dataset.mg; renderChips(); } });
+$('#doseMg').addEventListener('input', renderChips);
+$('#pLdx').addEventListener('click', () => setProduct('ldx'));
+$('#pDex').addEventListener('click', () => setProduct('dex'));
+function openDose(id) {
+  editingId = id || null;
+  const d = id ? active().doses.find(x => x.id === id) : null;
+  $('#doseTitle').textContent = d ? 'Edit dose' : 'Add dose';
+  $('#doseDelete').classList.toggle('hidden', !d);
+  if (d) {
+    setProduct(d.product, true);
+    $('#doseMg').value = fmtMg(d.mg);
+    $('#doseTime').value = d.time;
+    $('#doseFood').checked = d.food;
+  } else {
+    setProduct(state.last.product);
+    $('#doseTime').value = nowHHMM();
+    $('#doseFood').checked = false;
+  }
+  renderChips();
+  showSheet('#sheetDose');
+}
+$('#btnAdd').addEventListener('click', () => openDose());
+$('#doseSave').addEventListener('click', () => {
+  const mg = num($('#doseMg').value, NaN);
+  const time = $('#doseTime').value;
+  if (!(mg > 0) || mg > 1000) { $('#doseMg').focus(); toast('Enter a dose in mg'); return; }
+  if (!/^\d{2}:\d{2}/.test(time)) { toast('Choose a time'); return; }
+  const dose = { id: editingId || uid(), product: formProduct, mg, time: time.slice(0, 5), food: $('#doseFood').checked };
+  const plan = active();
+  if (editingId) {
+    const i = plan.doses.findIndex(x => x.id === editingId);
+    if (i >= 0) plan.doses[i] = dose; else plan.doses.push(dose);
+  } else plan.doses.push(dose);
+  state.last.product = formProduct;
+  state.last.mg[formProduct] = mg;
+  save(); hideSheet(); render();
+});
+$('#doseDelete').addEventListener('click', () => { const id = editingId; hideSheet(); deleteDose(id); });
+function deleteDose(id) {
+  const plan = active(), i = plan.doses.findIndex(x => x.id === id);
+  if (i < 0) return;
+  const [removed] = plan.doses.splice(i, 1);
+  save(); render();
+  toast(`Deleted ${PRODUCTS[removed.product]} ${fmtMg(removed.mg)} mg`, 'Undo', () => {
+    const p = state.plans.find(x => x.id === plan.id); if (!p) return;
+    p.doses.push(removed); save(); render();
+  });
+}
+$('#btnClear').addEventListener('click', () => {
+  const plan = active();
+  if (!plan.doses.length) return;
+  if (!confirm(`Clear all ${plan.doses.length} dose${plan.doses.length > 1 ? 's' : ''} from “${plan.name}”?`)) return;
+  state.yesterday = clone(plan.doses);
+  plan.doses = [];
+  save(); render();
+});
+
+// ---------- settings ----------
+const SETTINGS_SCHEMA = [
+  { title: 'You', fields: [
+    { k: 'weight', label: 'Body weight', unit: 'kg', step: 0.5, min: 20, max: 250 }
+  ] },
+  { title: 'Chart', fields: [
+    { k: 'startHour', label: 'Start', unit: 'h', step: 1, min: 0, max: 23, hint: 'Hour of day (0–23). Doses before this count as after midnight.' },
+    { k: 'endHour', label: 'End', unit: 'h', step: 1, min: 1, max: 47, hint: '24 = midnight, 26 = 2 am next day' },
+    { k: 'threshold', label: 'Threshold', unit: 'ng/mL', step: 1, min: 0, max: 500, hint: 'Reports when the curve falls below this after the peak' }
+  ] },
+  { title: 'd-Amphetamine', fields: [
+    { k: 'halfLife', label: 'Elimination half-life', unit: 'h', step: 0.5, min: 2, max: 40 },
+    { k: 'vd', label: 'Volume of distribution', unit: 'L/kg', step: 0.1, min: 0.5, max: 10 }
+  ] },
+  { title: 'Vyvanse (lisdexamfetamine)', fields: [
+    { k: 'ldxKa', label: 'Absorption rate (ka)', unit: '/h', step: 0.05, min: 0.05, max: 20 },
+    { k: 'ldxKconv', label: 'Conversion rate (kconv)', unit: '/h', step: 0.05, min: 0.05, max: 20, hint: 'LDX → d-amphetamine in red blood cells' },
+    { k: 'ldxF', label: 'Fraction delivered (F)', unit: '', step: 0.01, min: 0.05, max: 1.5 },
+    { k: 'ldxFoodLag', label: 'Food delay', unit: 'h', step: 0.1, min: 0, max: 6 }
+  ] },
+  { title: 'Dex IR (dexamfetamine sulfate)', fields: [
+    { k: 'dexKa', label: 'Absorption rate (ka)', unit: '/h', step: 0.05, min: 0.05, max: 20 },
+    { k: 'dexLag', label: 'Absorption lag', unit: 'h', step: 0.05, min: 0, max: 4 },
+    { k: 'dexF', label: 'Bioavailability (F)', unit: '', step: 0.01, min: 0.05, max: 1.5 },
+    { k: 'dexFoodLag', label: 'Food delay', unit: 'h', step: 0.1, min: 0, max: 6 }
+  ] }
+];
+function renderSettings() {
+  const s = state.settings;
+  let h = '';
+  for (const grp of SETTINGS_SCHEMA) {
+    h += `<h2 style="margin-top:14px">${grp.title}</h2><div class="group" style="margin-top:0">`;
+    for (const f of grp.fields) {
+      h += `<div class="field"><label for="set_${f.k}">${f.label}${f.hint ? `<span class="hint">${f.hint}</span>` : ''}</label>
+        <input id="set_${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="${f.step}" min="${f.min}" max="${f.max}" value="${+s[f.k]}"><span class="unit">${f.unit}</span></div>`;
+    }
+    h += '</div>';
+    if (grp.title === 'd-Amphetamine') {
+      const ke = Math.LN2 / s.halfLife, V = s.vd * s.weight;
+      h += `<p class="note">ke = ${ke.toFixed(4)} /h · V = ${V.toFixed(0)} L · CL = ${(ke * V).toFixed(1)} L/h</p>`;
+    }
+    if (grp.title.startsWith('Vyvanse')) h += `<p class="note">Intact LDX half-life (conversion): ${(Math.LN2 / s.ldxKconv).toFixed(2)} h</p>`;
+  }
+  h += `<h2 style="margin-top:14px">Carry-over</h2><div class="group" style="margin-top:0">
+    <div class="field"><label for="set_carry">Include previous day<span class="hint">Counts residual drug from yesterday’s doses</span></label><span class="switch"><input type="checkbox" id="set_carry" ${s.carry ? 'checked' : ''}><span></span></span></div>
+    <div class="field ${s.carry ? '' : 'hidden'}" id="carryModeRow"><label for="set_carryMode">Yesterday’s doses</label>
+      <select id="set_carryMode"><option value="repeat" ${s.carryMode === 'repeat' ? 'selected' : ''}>Same as each plan</option><option value="cleared" ${s.carryMode === 'cleared' ? 'selected' : ''}>Last cleared list</option></select></div>
+  </div>
+  <p class="note">“Same as each plan” assumes you took the same doses yesterday. “Last cleared list” uses the doses you had before you last tapped Clear all${state.yesterday.length ? ` (${state.yesterday.map(d => `${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg ${fmtClock(toMin(d.time))}`).join(', ')})` : ' (none saved yet)'}.</p>
+  <button class="btn" id="btnReset">Reset model and chart to defaults</button>
+  <h2 style="margin-top:20px">Your data</h2>
+  <button class="btn" id="btnExport">Export backup (JSON)</button>
+  <button class="btn" id="btnImport">Import backup…</button>
+  <p class="note">Everything stays on this phone. The app makes no network requests apart from loading its own files.</p>`;
+  $('#settingsBody').innerHTML = h;
+}
+$('#settingsBody').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.k) {
+    const f = SETTINGS_SCHEMA.flatMap(g => g.fields).find(x => x.k === t.dataset.k);
+    let v = num(t.value, NaN);
+    if (!Number.isFinite(v)) v = state.settings[f.k];
+    v = Math.min(f.max, Math.max(f.min, v));
+    state.settings[f.k] = v;
+    if (state.settings.endHour <= state.settings.startHour + 3) state.settings.endHour = Math.min(47, state.settings.startHour + 4);
+    save(); renderSettings(); render();
+  } else if (t.id === 'set_carry') {
+    state.settings.carry = t.checked; $('#carryModeRow').classList.toggle('hidden', !t.checked); save(); render();
+  } else if (t.id === 'set_carryMode') {
+    state.settings.carryMode = t.value === 'cleared' ? 'cleared' : 'repeat'; save(); render();
+  }
+});
+$('#settingsBody').addEventListener('click', e => {
+  if (e.target.id === 'btnReset') {
+    if (!confirm('Reset all model and chart settings to defaults? Your doses and plans are kept.')) return;
+    state.settings = { ...Model.DEFAULTS, ...CHART_DEFAULTS };
+    save(); renderSettings(); render();
+  } else if (e.target.id === 'btnExport') exportData();
+  else if (e.target.id === 'btnImport') $('#importFile').click();
+});
+$('#btnSettings').addEventListener('click', () => { renderSettings(); showSheet('#sheetSettings'); });
+
+async function exportData() {
+  const data = JSON.stringify({ app: 'meds-grapher', exported: new Date().toISOString(), ...state }, null, 2);
+  const name = `meds-grapher-${new Date().toISOString().slice(0, 10)}.json`;
+  const blob = new Blob([data], { type: 'application/json' });
+  try {
+    const file = new File([blob], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (!obj || !Array.isArray(obj.plans)) throw new Error('not a backup');
+    if (!confirm('Replace all current doses, plans and settings with this backup?')) return;
+    state = sanitize(obj); save(); renderSettings(); render(); toast('Backup imported');
+  } catch (err) { toast('That file isn’t a Meds Grapher backup'); }
+});
+
+// ---------- plans ----------
+function renderPlans() {
+  const vis = visiblePlans().map(p => p.id);
+  const summary = p => p.doses.length ? p.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time)).map(d => `${d.product === 'ldx' ? 'V' : 'D'}${fmtMg(d.mg)} ${fmtClock(toMin(d.time))}`).join(' · ') : 'No doses';
+  let h = `<p class="note" style="margin-top:0">Tap a plan to edit it on the main screen. Turn on up to ${MAX_VISIBLE} plans to overlay them on the chart. The plan you’re editing is always shown.</p><div class="group">`;
+  h += state.plans.map(p => {
+    const isA = p.id === state.activeId;
+    return `<div class="planrow">
+      <span class="sw" style="background:${planColor(p)}"></span>
+      <button class="nm" data-activate="${esc(p.id)}"><b>${esc(p.name)}</b><small>${esc(summary(p))}</small>${isA ? '<div class="act">EDITING</div>' : ''}</button>
+      <span class="switch" title="Show on chart"><input type="checkbox" aria-label="Show ${esc(p.name)} on chart" data-vis="${esc(p.id)}" ${vis.includes(p.id) ? 'checked' : ''} ${isA ? 'disabled' : ''}><span></span></span>
+    </div>`;
+  }).join('');
+  h += `</div>
+    <button class="btn primary" id="plDup">Duplicate “${esc(active().name)}” to tweak</button>
+    <button class="btn" id="plRename">Rename “${esc(active().name)}”</button>
+    ${state.plans.length > 1 ? `<button class="btn danger" id="plDelete">Delete “${esc(active().name)}”</button>` : ''}
+    <p class="note">Tip: name your current plan (e.g. “Vyvanse 40 + dex 5 at 1pm”), duplicate it, change a dose in the copy, then compare the curves.</p>`;
+  $('#plansBody').innerHTML = h;
+}
+$('#plansBody').addEventListener('click', e => {
+  const act = e.target.closest('[data-activate]');
+  if (act) { state.activeId = act.dataset.activate; save(); renderPlans(); render(); return; }
+  if (e.target.id === 'plDup') {
+    const a = active();
+    const name = prompt('Name for the copy', a.name + ' (copy)');
+    if (name === null) return;
+    const copy = { id: uid(), name: name.trim() || a.name + ' (copy)', doses: clone(a.doses).map(d => ({ ...d, id: uid() })), visible: true };
+    a.visible = true;
+    state.plans.push(copy); state.activeId = copy.id;
+    enforceVisibleLimit();
+    save(); renderPlans(); render();
+  } else if (e.target.id === 'plRename') {
+    const a = active(), name = prompt('Plan name', a.name);
+    if (name && name.trim()) { a.name = name.trim().slice(0, 80); save(); renderPlans(); render(); }
+  } else if (e.target.id === 'plDelete') {
+    const a = active();
+    if (state.plans.length < 2 || !confirm(`Delete plan “${a.name}”?`)) return;
+    state.plans = state.plans.filter(p => p.id !== a.id);
+    state.activeId = state.plans[0].id;
+    save(); renderPlans(); render();
+  }
+});
+function enforceVisibleLimit() {
+  let n = 1;
+  for (const p of state.plans) {
+    if (p.id === state.activeId) continue;
+    if (p.visible) { if (n >= MAX_VISIBLE) p.visible = false; else n++; }
+  }
+}
+$('#plansBody').addEventListener('change', e => {
+  const id = e.target.dataset.vis; if (!id) return;
+  const p = state.plans.find(x => x.id === id); if (!p) return;
+  if (e.target.checked && visiblePlans().length >= MAX_VISIBLE) { e.target.checked = false; toast(`Up to ${MAX_VISIBLE} plans can be shown at once`); return; }
+  p.visible = e.target.checked; save(); renderPlans(); render();
+});
+$('#btnPlans').addEventListener('click', () => { renderPlans(); showSheet('#sheetPlans'); });
+
+// ---------- about ----------
+function renderAbout() {
+  const M = Model, D = M.DEFAULTS, mwF = (f) => Object.entries(f).map(([el, n]) => `${n}×${el} ${M.ATOM[el]}`).join(' + ');
+  const rows = M.selfCheck().map(r => {
+    const dT = r.model.tmax - r.tmax, dC = (r.model.cmax - r.cmax) / r.cmax * 100;
+    const okT = Math.abs(dT) <= 0.3, okC = Math.abs(dC) <= 5;
+    return `<tr><td>${PRODUCTS[r.product]} ${r.mg} mg${r.food ? ' (fed)' : ''}</td>
+      <td>${r.tmax.toFixed(1)}</td><td class="${okT ? 'ok' : 'warn'}">${r.model.tmax.toFixed(2)}</td>
+      <td>${r.cmax.toFixed(1)}</td><td class="${okC ? 'ok' : 'warn'}">${r.model.cmax.toFixed(1)}</td><td>${r.note}</td></tr>`;
+  }).join('');
+  $('#aboutBody').innerHTML = `
+  <div class="disclaimer"><b>For curiosity only.</b> This is a population-average estimate built from published averages for healthy adults. Real concentrations vary widely between people (urine pH alone can change the half-life a lot) and from day to day. Don’t use it to change your doses. Talk to your prescriber about that.</div>
+
+  <h4>The model</h4>
+  <p>One compartment for d-amphetamine with first-order elimination. Each dose is modelled on its own, and the curves are added together (superposition).</p>
+  <span class="eq">Dex IR:    gut --ka--> central --ke--> out
+Vyvanse:   gut --ka--> intact LDX --kconv--> central --ke--> out
+
+ke = ln 2 / t½
+C(t) = Σ A_central,i(t − t_i − lag_i) / (Vd × weight)   [mg/L = µg/mL → ×1000 → ng/mL]</span>
+  <p>For a chain of first-order steps with rates k₁…kₙ (kₙ = ke), the amount in the last compartment after dose D is the Bateman solution:</p>
+  <span class="eq">Aₙ(t) = D·F·(k₁⋯kₙ₋₁) · Σⱼ e^(−kⱼt) / Π_{l≠j}(k_l − kⱼ)</span>
+  <p>Dex IR is a two-step chain (ka, ke) with an optional lag. Vyvanse is a three-step chain (ka, kconv, ke). Lisdexamfetamine is absorbed intact and then hydrolysed, mainly in red blood cells, into d-amphetamine and L-lysine. That extra step makes the d-amphetamine curve later and flatter. Food is modelled as an added lag. The Vyvanse label reports that a high-fat meal delays Tmax by about 1 h without changing Cmax or AUC. A pure lag reproduces exactly that, whereas a slower absorption rate would also lower Cmax.</p>
+
+  <h4>Converting labelled mg to d-amphetamine base</h4>
+  <p>Molecular weights calculated from standard atomic weights:</p>
+  <span class="eq">d-amphetamine C9H13N        = ${mwF(M.F.amph)} = ${M.MW.amph.toFixed(2)}
+lisdexamfetamine C15H25N3O  = ${M.MW.ldx.toFixed(2)}
+methanesulfonic acid CH4O3S = ${M.MW.msa.toFixed(2)}
+LDX dimesylate = ${M.MW.ldx.toFixed(2)} + 2 × ${M.MW.msa.toFixed(2)} = ${M.MW.ldxDimesylate.toFixed(2)}
+sulfuric acid H2SO4         = ${M.MW.h2so4.toFixed(2)}
+dexamfetamine sulfate (C9H13N)2·H2SO4 = 2 × ${M.MW.amph.toFixed(2)} + ${M.MW.h2so4.toFixed(2)} = ${M.MW.dexSulfate.toFixed(2)}
+
+Vyvanse: 1 mol LDX → 1 mol d-amphetamine
+  ${M.MW.amph.toFixed(2)} / ${M.MW.ldxDimesylate.toFixed(2)} = ${M.FACTOR.ldx.toFixed(4)}   (50 mg → ${(50 * M.FACTOR.ldx).toFixed(2)} mg base)
+Dex IR: 1 mol salt → 2 mol d-amphetamine
+  2 × ${M.MW.amph.toFixed(2)} / ${M.MW.dexSulfate.toFixed(2)} = ${M.FACTOR.dex.toFixed(4)}   (5 mg → ${(5 * M.FACTOR.dex).toFixed(2)} mg base)</span>
+
+  <h4>Default parameters</h4>
+  <div class="tablewrap"><table>
+    <tr><th>Parameter</th><th>Default</th><th>Basis</th></tr>
+    <tr><td>Body weight</td><td>${D.weight} kg</td><td>Reference adult used for fitting</td></tr>
+    <tr><td>d-amphetamine t½</td><td>${D.halfLife} h</td><td>Middle of the published adult range: ~12 h (Dexedrine label [5]); 10–11.3 h in healthy adults (Vyvanse label as quoted by DrugBank [8]); median 10.9–12.4 h (Kämmerer 2024 review [4]).</td></tr>
+    <tr><td>Vd</td><td>${D.vd} L/kg</td><td>Lower end of 3.5–4.6 L/kg (secondary summary [7]; I couldn’t identify or check the primary source). Chosen within that range so that, with F = 1, dex IR reproduces the label Cmax [5].</td></tr>
+    <tr><td>Dex IR ka</td><td>${D.dexKa} /h</td><td>Fitted: Tmax ≈ 3 h for dex IR tablets [5]</td></tr>
+    <tr><td>Dex IR lag</td><td>${D.dexLag} h</td><td>Not needed to fit [5]; adjustable</td></tr>
+    <tr><td>Dex IR F</td><td>${D.dexF}</td><td>Assumed complete. I didn’t find an absolute bioavailability figure.</td></tr>
+    <tr><td>Dex IR food delay</td><td>${D.dexFoodLag} h</td><td><b>Assumption, no primary source.</b> I found no food-effect data for dex IR tablets.</td></tr>
+    <tr><td>LDX ka</td><td>${D.ldxKa} /h</td><td rowspan="2">Fitted together so that intact LDX peaks at ~1 h and has t½ &lt; 1 h [1], and d-amphetamine peaks at ~3.8 h fasted (adults, 70 mg) [1][2]</td></tr>
+    <tr><td>LDX kconv</td><td>${D.ldxKconv} /h (t½ ${(Math.LN2 / D.ldxKconv).toFixed(2)} h)</td></tr>
+    <tr><td>LDX F</td><td>${D.ldxF}</td><td>Fitted so that 50 mg gives Cmax 44.6 ng/mL [3]. It is not a measured bioavailability. It absorbs differences between the LDX study [3] and the dex study [5]. Dolder 2017 [6] found equal Cmax/AUC for equimolar LDX and dex, which suggests the true ratio is near 1.</td></tr>
+    <tr><td>LDX food delay</td><td>${D.ldxFoodLag} h</td><td>Fitted: Tmax 3.8 → 4.7 h with a high-fat meal, Cmax unchanged [1][2]</td></tr>
+  </table></div>
+
+  <h4>Self-check: model vs published (70 kg, default parameters)</h4>
+  <div class="tablewrap"><table>
+    <tr><th>Dose</th><th>Tmax pub (h)</th><th>Tmax model</th><th>Cmax pub (ng/mL)</th><th>Cmax model</th><th>Reference value</th></tr>
+    ${rows}
+  </table></div>
+  <p class="note">Green: within 0.3 h or 5 %. The rows marked “derived” were not published at that dose. They were scaled linearly from a published dose.</p>
+
+  <h4>What was confirmed, and what wasn’t</h4>
+  <p><b>Confirmed</b> (from the label text or abstract as reproduced in search results; full texts couldn’t be opened from the build environment):</p>
+  <ul>
+    <li>Vyvanse, adults, 70 mg: d-amphetamine Tmax 3.8 h fasted, 4.7 h after a high-fat meal. Food doesn’t change Cmax or AUC. [1][2]</li>
+    <li>Intact LDX: plasma half-life under 1 h; Tmax about 1 h. [1]</li>
+    <li>Vyvanse 50 mg, healthy adults: mean d-amphetamine Cmax 44.6 ng/mL, rising linearly with dose over 50–250 mg. [3], quoted by [4]</li>
+    <li>Dex IR, 3 × 5 mg tablets, 12 healthy subjects: Cmax 36.6 ng/mL at about 3 h; t½ about 12 h. [5]</li>
+    <li>LDX 100 mg vs dex 40 mg (equimolar): LDX lag about 0.6 h longer and Tmax about 1.1 h later, with no difference in Cmax or AUC. [6]</li>
+    <li>d-amphetamine t½ 10–11.3 h in healthy adults (secondary source quoting the label) [8]; median 10.9–12.4 h (review) [4].</li>
+  </ul>
+  <p><b>Not confirmed:</b></p>
+  <ul>
+    <li>Adult Cmax for Vyvanse 30 mg and 70 mg capsules. These were derived from 44.6 ng/mL at 50 mg by dose proportionality. For reference, a 70 mg <i>oral solution</i> in 6 adults gave 80.3 ± 11.8 ng/mL at a median 3.0 h [9], higher than this model predicts.</li>
+    <li>The exact adult Tmax at 30 and 50 mg (the 70 mg value is applied). The label’s 3.5 h figure is from children.</li>
+    <li>Dex IR Cmax at 5 mg and 10 mg (scaled linearly from 15 mg). I also found a claim of 29.2 ng/mL at 2 h after 10 mg but couldn’t trace its source.</li>
+    <li>Vd 3.5–4.6 L/kg (secondary summary only).</li>
+    <li>Absolute oral bioavailability of d-amphetamine (assumed complete).</li>
+    <li>Any food effect for dex IR tablets (the 0.5 h delay is an assumption).</li>
+    <li>Body weight of the study participants (assumed 70 kg).</li>
+  </ul>
+
+  <h4>Sources</h4>
+  <ol>
+    <li>Vyvanse (lisdexamfetamine dimesylate) US Prescribing Information, Takeda, section 12.3 (DailyMed setid a310fc51-2743-4755-8398-fed5402283f6); Australian PI (TGA) for the LDX half-life.</li>
+    <li>Krishnan S, Zhang Y. Relative bioavailability of lisdexamfetamine 70-mg capsules in fasted and fed healthy adult volunteers and in solution. J Clin Pharmacol 2008;48(3):293–302.</li>
+    <li>Ermer J, Homolka R, Martin P, et al. Lisdexamfetamine dimesylate: linear dose-proportionality, low intersubject and intrasubject variability, and safety in an open-label single-dose pharmacokinetic study in healthy adult volunteers. J Clin Pharmacol 2010;50(9):1001–10. PMID 20173084.</li>
+    <li>Kämmerer N, et al. Comparative pharmacology and abuse potential of oral dexamphetamine and lisdexamfetamine—a literature review. Hum Psychopharmacol 2024. doi:10.1002/hup.2910.</li>
+    <li>Dexedrine Spansule (dextroamphetamine sulfate) US Prescribing Information, Clinical Pharmacology (tablet vs capsule study in 12 healthy subjects).</li>
+    <li>Dolder PC, Strajhar P, Vizeli P, et al. Pharmacokinetics and pharmacodynamics of lisdexamfetamine compared with D-amphetamine in healthy subjects. Front Pharmacol 2017;8:617.</li>
+    <li>ScienceDirect Topics, “Amphetamine – an overview” (secondary summary: Vd 3.5–4.6 L/kg).</li>
+    <li>DrugBank, Lisdexamfetamine (DB01255), pharmacokinetics section.</li>
+    <li>Krishnan S, Pennick M, Stark JG. Metabolism, distribution and elimination of lisdexamfetamine dimesylate. Clin Drug Investig 2008;28(12):745–55.</li>
+  </ol>
+  <p class="note">The Australian dexamfetamine sulfate 5 mg tablet is treated as pharmacokinetically equivalent to the US dextroamphetamine sulfate tablets used in [5]. That equivalence wasn’t verified against the Australian PI.</p>
+  <p class="note">App version: <span id="appVersion">–</span></p>`;
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = e => { const el = $('#appVersion'); if (el) el.textContent = e.data; };
+    navigator.serviceWorker.controller.postMessage('version', [ch.port2]);
+  }
+}
+$('#btnAbout').addEventListener('click', () => { renderAbout(); showSheet('#sheetAbout'); });
+
+// ---------- lifecycle ----------
+let resizeRaf = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(resizeRaf); resizeRaf = requestAnimationFrame(drawChart); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => render());
+setInterval(drawChart, 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+$('#storageBanner').classList.toggle('hidden', storageOK);
+render();
+
+// ---------- service worker & update notice ----------
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  let reloadRequested = false, refreshing = false;
+  // Only reload when the user asked for the update (first install also fires controllerchange).
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloadRequested || refreshing) return; refreshing = true; location.reload(); });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    const prompt = w => toast('Updated — reload to use the new version', 'Reload', () => { reloadRequested = true; w.postMessage('skipWaiting'); }, 0);
+    if (reg.waiting && navigator.serviceWorker.controller) prompt(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      w && w.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) prompt(w);
+      });
+    });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>
