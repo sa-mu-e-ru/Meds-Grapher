@@ -1,5 +1,5 @@
 // Bump VERSION whenever any app file changes so clients pick up the new cache.
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.1.0';
 const CACHE = 'meds-grapher-' + VERSION;
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 

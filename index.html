@@ -20,9 +20,9 @@
 <style>
 :root{
   --bg:#f2f2f7; --card:#fff; --text:#000; --muted:#6c6c70; --sep:#d8d8dc; --fill:#e9e9ee;
-  --accent:#0a66d8; --accent-text:#fff; --danger:#d70015; --now:#d70015; --grid:#ececf0; --axis:#8e8e93;
+  --accent:#0a66d8; --accent-text:#fff; --danger:#d70015; --grid:#ececf0; --axis:#8e8e93;
   --ldx:#7b3fe4; --dex:#e8590c;
-  --p0:#0a66d8; --p1:#c2255c; --p2:#2b8a3e; --p3:#a86b00;
+  --p0:#0a66d8; --p1:#c2255c; --p2:#2b8a3e; --p3:#a86b00; --p4:#0b7285; --p5:#862e9c;
   --shadow:0 1px 3px rgba(0,0,0,.08);
   --r:14px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
@@ -31,9 +31,9 @@
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#000; --card:#1c1c1e; --text:#fff; --muted:#98989f; --sep:#38383a; --fill:#2c2c2e;
-    --accent:#4c9bff; --accent-text:#000; --danger:#ff453a; --now:#ff453a; --grid:#262628; --axis:#8e8e93;
+    --accent:#4c9bff; --accent-text:#000; --danger:#ff453a; --grid:#262628; --axis:#8e8e93;
     --ldx:#b28cff; --dex:#ff9f5a;
-    --p0:#4c9bff; --p1:#ff6b9d; --p2:#5fd47a; --p3:#ffc94d;
+    --p0:#4c9bff; --p1:#ff6b9d; --p2:#5fd47a; --p3:#ffc94d; --p4:#3bc9db; --p5:#e599f7;
     --shadow:none;
   }
 }
@@ -49,8 +49,6 @@ header h1{font-size:22px;font-weight:700;margin:0;flex:1;min-width:0;white-space
 .iconbtn{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--accent)}
 .iconbtn:active{background:var(--fill)}
 .iconbtn svg{width:24px;height:24px}
-.planchip{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 6px}
-.planchip i{width:10px;height:10px;border-radius:5px;display:inline-block}
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow)}
 .chartcard{position:relative;padding:8px 6px 4px}
 #chart{display:block;width:100%;height:clamp(220px,42vh,380px);touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -115,6 +113,10 @@ main{max-width:640px;margin:0 auto}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 4px}
 .chip{min-height:40px;min-width:52px;padding:0 12px;border-radius:20px;background:var(--fill);font-weight:600;font-variant-numeric:tabular-nums}
 .chip[aria-pressed=true]{background:var(--accent);color:var(--accent-text)}
+.pchip{display:inline-flex;align-items:center;gap:7px}
+.pchip i{width:10px;height:10px;border-radius:5px;display:inline-block;box-shadow:0 0 0 1.5px rgba(255,255,255,.8)}
+.tag{display:inline-flex;align-items:center;gap:4px;margin-right:8px}
+.tag i{width:8px;height:8px;border-radius:4px;display:inline-block}
 .switch{position:relative;width:51px;height:31px;flex:none}
 .switch input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;z-index:1;cursor:pointer}
 .switch span{position:absolute;inset:0;background:var(--fill);border-radius:16px;transition:background .2s}
@@ -137,15 +139,6 @@ main{max-width:640px;margin:0 auto}
 .ok{color:#248a3d}.warn{color:#b25000}
 @media (prefers-color-scheme: dark){.ok{color:#30d158}.warn{color:#ffb340}}
 .disclaimer{background:var(--fill);border-radius:12px;padding:12px 14px;font-size:14px}
-.planrow{display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 10px 6px 14px;border-top:1px solid var(--sep)}
-.planrow:first-child{border-top:0}
-.planrow .nm{flex:1;min-width:0;text-align:left;min-height:44px}
-.planrow .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.planrow .nm small{color:var(--muted)}
-.planrow .sw{width:12px;height:12px;border-radius:6px;flex:none}
-.planrow .act{font-size:12px;color:var(--accent);font-weight:600}
-.small{min-height:44px;padding:0 10px;color:var(--accent);font-size:15px}
-.small.danger{color:var(--danger)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 82px);z-index:30;background:#1c1c1e;color:#fff;border-radius:12px;padding:6px 6px 6px 14px;display:flex;align-items:center;gap:8px;font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
 @media (prefers-color-scheme: dark){.toast{background:#3a3a3c}}
 .toast button{color:#6cb4ff;font-weight:650;min-height:40px;padding:0 10px}
@@ -155,18 +148,16 @@ main{max-width:640px;margin:0 auto}
 <main>
   <header>
     <h1>Meds Grapher</h1>
-    <button class="iconbtn" id="btnPlans" aria-label="Compare plans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5-9 8-9s4 5 7 5 3-2 3-2"/><path d="M3 20c3-3 6-6 9-6s4 2 6 2 3-1 3-1" opacity=".5"/></svg></button>
     <button class="iconbtn" id="btnAbout" aria-label="About the model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg></button>
     <button class="iconbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <div id="storageBanner" class="banner hidden">Storage is unavailable, so changes won’t be saved after you close the app.</div>
-  <div id="planChip" class="planchip hidden"></div>
   <div class="card chartcard">
     <canvas id="chart" aria-label="Estimated d-amphetamine concentration chart" role="img"></canvas>
     <div id="readout" class="hidden"></div>
     <div id="legend" class="legend hidden"></div>
   </div>
-  <div class="stats">
+  <div class="stats" id="stats">
     <div class="stat"><div class="k">Cmax</div><div class="v" id="sCmax">—</div></div>
     <div class="stat"><div class="k">Peak at</div><div class="v" id="sTmax">—</div></div>
     <div class="stat"><div class="k" id="sThrK">Below 20 ng/mL</div><div class="v" id="sThr">—</div></div>
@@ -176,6 +167,10 @@ main{max-width:640px;margin:0 auto}
   <h2><span>Doses</span><button id="btnClear" class="danger">Clear all</button></h2>
   <div class="card list" id="doseList"></div>
   <p class="note" id="listNote">Tap a dose to edit. Swipe left to delete.</p>
+
+  <h2><span>Plans</span><button id="btnAddPlan">+ Add plan</button></h2>
+  <div class="card list" id="planList"></div>
+  <p class="note">Each plan is drawn as its own line. Tap to rename, swipe left to delete.</p>
 </main>
 
 <button class="fab" id="btnAdd"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add dose</button>
@@ -190,6 +185,7 @@ main{max-width:640px;margin:0 auto}
       <button id="pLdx" aria-pressed="true">Vyvanse</button>
       <button id="pDex" aria-pressed="false">Dex IR</button>
     </div>
+    <div id="dosePlansWrap" class="hidden"><p class="note" style="margin:14px 4px 6px">Add to plan</p><div class="chips" id="dosePlans"></div></div>
     <div class="group">
       <div class="field"><label for="doseMg">Dose</label><input id="doseMg" type="number" inputmode="decimal" min="0" step="any"><span class="unit">mg</span></div>
       <div class="field" style="display:block;padding-top:4px;padding-bottom:8px"><div class="chips" id="mgChips"></div></div>
@@ -206,10 +202,17 @@ main{max-width:640px;margin:0 auto}
   <div class="body" id="settingsBody"></div>
 </section>
 
-<!-- Plans sheet -->
-<section class="sheet hidden" id="sheetPlans" role="dialog" aria-modal="true" aria-labelledby="plTitle">
-  <div class="bar"><span style="min-width:64px"></span><h3 id="plTitle">Compare plans</h3><button class="strong" data-close>Done</button></div>
-  <div class="body" id="plansBody"></div>
+<!-- Plan sheet -->
+<section class="sheet hidden" id="sheetPlan" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+  <div class="bar"><button data-close>Cancel</button><h3 id="planTitle">Add plan</h3><button class="strong" id="planSave">Save</button></div>
+  <div class="body">
+    <div class="group" style="margin-top:0">
+      <div class="field"><label for="planName">Name</label><input id="planName" type="text" maxlength="80" autocomplete="off" enterkeyhint="done" style="width:14em"></div>
+    </div>
+    <div id="planCopyWrap" class="hidden"><p class="note" style="margin:14px 4px 6px">Start with the doses from</p><div class="chips" id="planCopy"></div>
+      <p class="note">Copied doses are shared, so editing one changes it in both plans. To change a dose in one plan only, untick the other plan when you edit it.</p></div>
+    <button class="btn danger hidden" id="planDelete">Delete plan</button>
+  </div>
 </section>
 
 <!-- About sheet -->
@@ -328,7 +331,7 @@ if (typeof module !== 'undefined') module.exports = Model;
 'use strict';
 const $ = s => document.querySelector(s);
 const KEY = 'medsGrapher.v1';
-const MAX_VISIBLE = 4;
+const MAX_PLANS = 6;
 const PRODUCTS = { ldx: 'Vyvanse', dex: 'Dex IR' };
 const CHIPS = { ldx: [20, 30, 40, 50, 60, 70], dex: [2.5, 5, 10, 15, 20] };
 const CHART_DEFAULTS = { startHour: 6, endHour: 26, threshold: 20, carry: false, carryMode: 'repeat' };
@@ -338,46 +341,60 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) ? n : d; };
 
 // ---------- state & storage ----------
+// v2: doses live in one list; each dose lists the plan ids it belongs to.
 let storageOK = true;
 function defaultState() {
   const id = uid();
   return {
-    v: 1,
-    plans: [{ id, name: 'Today', doses: [], visible: true }],
-    activeId: id,
+    v: 2,
+    plans: [{ id, name: 'Today' }],
+    doses: [],
     settings: { ...Model.DEFAULTS, ...CHART_DEFAULTS },
-    last: { product: 'ldx', mg: { ldx: 30, dex: 5 } },
+    last: { product: 'ldx', mg: { ldx: 30, dex: 5 }, plans: [id] },
     yesterday: []
   };
 }
-function sanitizeDose(d) {
+function sanitizeDose(d, ids) {
   if (!d || typeof d !== 'object') return null;
   const product = d.product === 'dex' ? 'dex' : d.product === 'ldx' ? 'ldx' : null;
   const mg = num(d.mg, NaN);
   const time = typeof d.time === 'string' && /^\d{1,2}:\d{2}$/.test(d.time) ? d.time.padStart(5, '0') : null;
   if (!product || !(mg > 0) || !time) return null;
-  return { id: typeof d.id === 'string' ? d.id : uid(), product, mg, time, food: !!d.food };
+  const plans = Array.isArray(d.plans) ? [...new Set(d.plans.filter(id => ids.includes(id)))] : [];
+  return { id: typeof d.id === 'string' ? d.id : uid(), product, mg, time, food: !!d.food, plans };
+}
+// Identical doses in several plans become one dose shared by those plans.
+function mergeDoses(list) {
+  const byKey = new Map();
+  for (const d of list) {
+    const k = [d.product, d.mg, d.time, d.food].join('|');
+    const m = byKey.get(k);
+    if (m) m.plans = [...new Set(m.plans.concat(d.plans))];
+    else byKey.set(k, { ...d, plans: d.plans.slice() });
+  }
+  return [...byKey.values()];
 }
 function sanitize(s) {
-  const base = defaultState();
-  if (!s || typeof s !== 'object') return base;
-  const out = base;
-  if (Array.isArray(s.plans) && s.plans.length) {
-    out.plans = s.plans.filter(p => p && typeof p === 'object').map(p => ({
+  const out = defaultState();
+  if (!s || typeof s !== 'object') return out;
+  const rawPlans = Array.isArray(s.plans) ? s.plans.filter(p => p && typeof p === 'object').slice(0, MAX_PLANS) : [];
+  if (rawPlans.length) {
+    out.plans = rawPlans.map(p => ({
       id: typeof p.id === 'string' ? p.id : uid(),
-      name: typeof p.name === 'string' && p.name.trim() ? p.name.slice(0, 80) : 'Plan',
-      doses: Array.isArray(p.doses) ? p.doses.map(sanitizeDose).filter(Boolean) : [],
-      visible: p.visible !== false
+      name: typeof p.name === 'string' && p.name.trim() ? p.name.trim().slice(0, 80) : 'Plan'
     }));
-    if (!out.plans.length) out.plans = base.plans;
   }
-  out.activeId = out.plans.some(p => p.id === s.activeId) ? s.activeId : out.plans[0].id;
+  const ids = out.plans.map(p => p.id);
+  let doses = [];
+  if (Array.isArray(s.doses)) doses = s.doses.map(d => sanitizeDose(d, ids));
+  else rawPlans.forEach((p, i) => { // v1 format: doses stored inside each plan
+    if (Array.isArray(p.doses)) for (const d of p.doses) doses.push(sanitizeDose({ ...d, plans: [out.plans[i].id] }, ids));
+  });
+  out.doses = mergeDoses(doses.filter(d => d && d.plans.length));
   const st = s.settings && typeof s.settings === 'object' ? s.settings : {};
   for (const k of Object.keys(out.settings)) {
-    if (typeof out.settings[k] === 'number') {
-      const v = num(st[k], out.settings[k]);
-      out.settings[k] = v;
-    } else if (typeof out.settings[k] === 'boolean') out.settings[k] = typeof st[k] === 'boolean' ? st[k] : out.settings[k];
+    if (typeof out.settings[k] === 'number') out.settings[k] = num(st[k], out.settings[k]);
+    else if (typeof out.settings[k] === 'boolean') out.settings[k] = typeof st[k] === 'boolean' ? st[k] : out.settings[k];
     else if (k === 'carryMode') out.settings[k] = st[k] === 'cleared' ? 'cleared' : 'repeat';
   }
   if (s.last && typeof s.last === 'object') {
@@ -387,7 +404,11 @@ function sanitize(s) {
       out.last.mg.dex = num(s.last.mg.dex, out.last.mg.dex);
     }
   }
-  out.yesterday = Array.isArray(s.yesterday) ? s.yesterday.map(sanitizeDose).filter(Boolean) : [];
+  const lastPlans = s.last && Array.isArray(s.last.plans) ? s.last.plans.filter(id => ids.includes(id)) : [];
+  out.last.plans = lastPlans.length ? lastPlans : ids.slice();
+  // yesterday's doses from v1 carry no plan ids: count them for every plan
+  out.yesterday = Array.isArray(s.yesterday) ? s.yesterday.map(d => sanitizeDose(d, ids)).filter(Boolean)
+    .map(d => d.plans.length ? d : { ...d, plans: ids.slice() }) : [];
   return out;
 }
 function load() {
@@ -404,9 +425,8 @@ function save() {
 let state = load();
 try { localStorage.setItem(KEY + '.probe', '1'); localStorage.removeItem(KEY + '.probe'); } catch (e) { storageOK = false; }
 
-const active = () => state.plans.find(p => p.id === state.activeId) || state.plans[0];
-const visiblePlans = () => state.plans.filter(p => p.id === state.activeId || p.visible).slice(0, MAX_VISIBLE);
-const planColor = p => cssVar('--p' + (state.plans.indexOf(p) % 4));
+const planById = id => state.plans.find(p => p.id === id);
+const planColor = p => cssVar('--p' + (state.plans.indexOf(p) % MAX_PLANS));
 const params = () => state.settings;
 
 // ---------- time helpers ----------
@@ -428,10 +448,11 @@ const endMin = () => params().endHour * 60;
 const placeMin = hhmm => { let t = toMin(hhmm); if (t < startMin()) t += 1440; return t; };
 const nowMin = () => { const d = new Date(); let t = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; if (t < startMin()) t += 1440; return t; };
 
+const forPlan = (list, plan) => list.filter(d => d.plans.includes(plan.id));
 function placedDoses(plan) {
-  let ds = plan.doses.map(d => ({ ...d, t: placeMin(d.time) }));
+  let ds = forPlan(state.doses, plan).map(d => ({ ...d, t: placeMin(d.time) }));
   if (params().carry) {
-    const prev = params().carryMode === 'cleared' ? state.yesterday : plan.doses;
+    const prev = forPlan(params().carryMode === 'cleared' ? state.yesterday : state.doses, plan);
     ds = ds.concat(prev.map(d => ({ ...d, t: placeMin(d.time) - 1440, carry: true })));
   }
   return ds;
@@ -475,7 +496,7 @@ function drawChart() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
   const s0 = startMin(), s1 = endMin(), p = params();
-  lastSeries = visiblePlans().map(series);
+  lastSeries = state.plans.map(series);
   const maxC = Math.max(p.threshold * 1.15, 10, ...lastSeries.map(s => s.cmax * 1.12));
   const step = niceStep(maxC), yMax = Math.ceil(maxC / step) * step;
   const X = t => x0 + (t - s0) / (s1 - s0) * (x1 - x0);
@@ -512,12 +533,10 @@ function drawChart() {
     g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillStyle = text;
     g.fillText(p.threshold + ' ng/mL', x1 - 2, y - 2);
   }
-  // curves (active plan drawn last, on top)
-  const ordered = lastSeries.slice().sort((a, b) => (a.plan.id === state.activeId) - (b.plan.id === state.activeId));
+  // curves: one solid line per plan; area fill only when there is a single plan
   g.save(); g.beginPath(); g.rect(x0, y0 - 2, x1 - x0, y1 - y0 + 2); g.clip();
-  for (const s of ordered) {
-    const isActive = s.plan.id === state.activeId;
-    if (isActive && lastSeries.length === 1) {
+  for (const s of lastSeries) {
+    if (lastSeries.length === 1) {
       const grad = g.createLinearGradient(0, y0, 0, y1);
       grad.addColorStop(0, hexA(s.color, .28)); grad.addColorStop(1, hexA(s.color, .02));
       g.beginPath(); g.moveTo(X(s.pts[0][0]), Y(0));
@@ -526,30 +545,25 @@ function drawChart() {
     }
     g.beginPath();
     s.pts.forEach(([t, c], i) => i ? g.lineTo(X(t), Y(c)) : g.moveTo(X(t), Y(c)));
-    g.strokeStyle = s.color; g.lineWidth = isActive ? 2.5 : 2; g.lineJoin = 'round';
-    if (!isActive) g.setLineDash([6, 4]);
-    g.stroke(); g.setLineDash([]);
+    g.strokeStyle = s.color; g.lineWidth = 2.5; g.lineJoin = 'round';
+    g.stroke();
   }
   g.restore();
-  // dose markers on x-axis
-  const markerPlans = lastSeries.length > 1 ? lastSeries : lastSeries.slice(0, 1);
-  markerPlans.forEach((s, i) => {
-    for (const d of s.ds) {
-      if (d.carry || d.t < s0 || d.t > s1) continue;
-      const x = X(d.t), y = y1 + 1 + i * 0;
-      g.fillStyle = cssVar(d.product === 'ldx' ? '--ldx' : '--dex');
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x - 5, y + 9); g.lineTo(x + 5, y + 9); g.closePath(); g.fill();
-      if (lastSeries.length > 1) { g.strokeStyle = s.color; g.lineWidth = 1.5; g.stroke(); g.lineWidth = 1; }
-    }
-  });
+  // dose markers on x-axis, coloured by product
+  for (const d of state.doses) {
+    const t = placeMin(d.time);
+    if (t < s0 || t > s1) continue;
+    const x = X(t), y = y1 + 1;
+    g.fillStyle = cssVar(d.product === 'ldx' ? '--ldx' : '--dex');
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x - 5, y + 9); g.lineTo(x + 5, y + 9); g.closePath(); g.fill();
+  }
   // now line
   const nm = nowMin();
   if (nm >= s0 && nm <= s1) {
     const x = Math.round(X(nm)) + .5;
-    g.strokeStyle = cssVar('--now'); g.lineWidth = 1.5; g.setLineDash([4, 3]);
+    g.strokeStyle = axis; g.lineWidth = 1; g.setLineDash([3, 4]);
     g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); g.setLineDash([]);
-    g.fillStyle = cssVar('--now'); g.textAlign = 'center'; g.textBaseline = 'bottom';
-    g.font = '600 10px -apple-system, system-ui, sans-serif';
+    g.fillStyle = text; g.textAlign = 'center'; g.textBaseline = 'bottom';
     g.fillText('now', Math.min(Math.max(x, x0 + 12), x1 - 12), y0 - 1);
   }
   // cursor
@@ -563,7 +577,7 @@ function drawChart() {
       g.strokeStyle = cssVar('--card'); g.lineWidth = 2; g.stroke(); g.lineWidth = 1;
     }
   }
-  if (!active().doses.length && lastSeries.length === 1 && !(p.carry && lastSeries[0].ds.length)) {
+  if (lastSeries.every(s => !s.ds.length)) {
     g.fillStyle = text; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '15px -apple-system, system-ui, sans-serif';
     g.fillText('Tap “Add dose” to start', (x0 + x1) / 2, (y0 + y1) / 2);
   }
@@ -610,30 +624,30 @@ function showReadout() {
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtMg = mg => (+mg).toString();
 const fmtT = t => t === null ? '—' : fmtClock(t) + (t >= 1440 ? '<small> +1</small>' : '');
+const multi = () => state.plans.length > 1;
 
 function render() {
   drawChart();
   showReadout();
   renderStats();
   renderList();
-  renderHeader();
-}
-function renderHeader() {
-  const chip = $('#planChip');
-  if (state.plans.length > 1) {
-    const a = active();
-    chip.innerHTML = `<i style="background:${planColor(a)}"></i>Editing: ${esc(a.name)}`;
-    chip.classList.remove('hidden');
-  } else chip.classList.add('hidden');
+  renderPlanList();
   const lg = $('#legend');
-  if (lastSeries.length > 1) {
+  if (multi()) {
     lg.innerHTML = lastSeries.map(s => `<span><i style="background:${s.color}"></i>${esc(s.plan.name)}</span>`).join('');
     lg.classList.remove('hidden');
   } else lg.classList.add('hidden');
 }
 function renderStats() {
   const p = params();
-  const s = lastSeries.find(x => x.plan.id === state.activeId) || lastSeries[0];
+  $('#stats').classList.toggle('hidden', multi());
+  $('#cmp').classList.toggle('hidden', !multi());
+  if (multi()) {
+    $('#cmp').innerHTML = `<table><tr><th>Plan</th><th>Cmax</th><th>Peak</th><th>&lt; ${+p.threshold}</th></tr>` +
+      lastSeries.map(x => `<tr><td><i style="background:${x.color}"></i>${esc(x.plan.name)}</td><td>${x.cmax < .05 ? '—' : x.cmax.toFixed(1)}</td><td>${x.cmax < .05 ? '—' : fmtT(x.tmax)}</td><td>${x.cmax <= p.threshold ? '—' : x.below === null ? '&gt;24 h' : fmtT(x.below)}</td></tr>`).join('') + '</table>';
+    return;
+  }
+  const s = lastSeries[0];
   $('#sThrK').textContent = `Below ${+p.threshold} ng/mL`;
   if (!s || s.cmax < 0.05) {
     $('#sCmax').innerHTML = '—'; $('#sTmax').innerHTML = '—'; $('#sThr').innerHTML = '—';
@@ -642,40 +656,42 @@ function renderStats() {
     $('#sTmax').innerHTML = fmtT(s.tmax);
     $('#sThr').innerHTML = s.cmax <= p.threshold ? '<small>never above</small>' : s.below === null ? '<small>&gt; 24 h</small>' : fmtT(s.below);
   }
-  const cmp = $('#cmp');
-  if (lastSeries.length > 1) {
-    cmp.innerHTML = `<table><tr><th>Plan</th><th>Cmax</th><th>Peak</th><th>&lt; ${+p.threshold}</th></tr>` +
-      lastSeries.map(x => `<tr><td><i style="background:${x.color}"></i>${esc(x.plan.name)}</td><td>${x.cmax.toFixed(1)}</td><td>${x.cmax < .05 ? '—' : fmtT(x.tmax)}</td><td>${x.cmax <= p.threshold ? '—' : x.below === null ? '&gt;24 h' : fmtT(x.below)}</td></tr>`).join('') + '</table>';
-    cmp.classList.remove('hidden');
-  } else cmp.classList.add('hidden');
 }
+const rowHTML = (id, dotStyle, title, sub, right) => `
+    <div class="row">
+      <button class="del" data-del="${esc(id)}" tabindex="-1">Delete</button>
+      <button class="fg" data-edit="${esc(id)}">
+        <span class="dot" style="${dotStyle}"></span>
+        <span class="main"><span class="t1">${title}</span>${sub ? `<span class="t2">${sub}</span>` : ''}</span>
+        ${right ? `<span class="time">${right}</span>` : ''}
+      </button>
+    </div>`;
 function renderList() {
-  const plan = active(), el = $('#doseList');
-  const doses = plan.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time));
+  const el = $('#doseList');
+  const doses = state.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time));
   $('#btnClear').classList.toggle('hidden', !doses.length);
   $('#listNote').classList.toggle('hidden', !doses.length);
-  if (!doses.length) {
-    el.innerHTML = `<div class="empty">No doses yet.</div>`;
-    return;
-  }
-  el.innerHTML = doses.map(d => `
-    <div class="row" data-id="${esc(d.id)}">
-      <button class="del" data-del="${esc(d.id)}" tabindex="-1">Delete</button>
-      <button class="fg" data-edit="${esc(d.id)}">
-        <span class="dot" style="background:var(--${d.product})"></span>
-        <span class="main"><span class="t1">${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg</span>
-          <span class="t2">${d.food ? 'With food' : ''}</span></span>
-        <span class="time">${fmtClock(toMin(d.time))}</span>
-      </button>
-    </div>`).join('');
-  el.querySelectorAll('.t2').forEach(t => { if (!t.textContent) t.remove(); });
+  if (!doses.length) { el.innerHTML = `<div class="empty">No doses yet.</div>`; return; }
+  el.innerHTML = doses.map(d => {
+    const parts = [];
+    if (multi()) parts.push(state.plans.filter(p => d.plans.includes(p.id))
+      .map(p => `<span class="tag"><i style="background:${planColor(p)}"></i>${esc(p.name)}</span>`).join(''));
+    if (d.food) parts.push('With food');
+    return rowHTML(d.id, `background:var(--${d.product})`, `${PRODUCTS[d.product]} ${fmtMg(d.mg)} mg`, parts.join(' · '), fmtClock(toMin(d.time)));
+  }).join('');
+}
+function renderPlanList() {
+  $('#planList').innerHTML = state.plans.map(p => {
+    const n = state.doses.filter(d => d.plans.includes(p.id)).length;
+    return rowHTML(p.id, `background:${planColor(p)}`, esc(p.name), `${n} dose${n === 1 ? '' : 's'}`, '');
+  }).join('');
+  $('#btnAddPlan').classList.toggle('hidden', state.plans.length >= MAX_PLANS);
 }
 
-// swipe to delete
-(function bindList() {
-  const el = $('#doseList');
+// Swipe left to reveal Delete; tap to edit. Used by the dose and plan lists.
+function bindSwipeList(el, onTap, onDelete) {
   let sx = 0, sy = 0, fg = null, dx = 0, mode = null, opened = null;
-  const close = (except) => { if (opened && opened !== except) { opened.style.transform = ''; opened = null; } };
+  const close = except => { if (opened && opened !== except) { opened.style.transform = ''; opened = null; } };
   el.addEventListener('touchstart', e => {
     const f = e.target.closest('.fg'); if (!f) return;
     close(f); fg = f; sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; mode = null;
@@ -701,15 +717,17 @@ function renderList() {
   });
   el.addEventListener('click', e => {
     const del = e.target.closest('[data-del]');
-    if (del) { deleteDose(del.dataset.del); return; }
+    if (del) { opened = null; onDelete(del.dataset.del); return; }
     const ed = e.target.closest('[data-edit]');
     if (ed) {
       if (ed.dataset.swiped) return;
       if (opened) { const wasThis = opened === ed; close(); if (wasThis) return; }
-      openDose(ed.dataset.edit);
+      onTap(ed.dataset.edit);
     }
   });
-})();
+}
+bindSwipeList($('#doseList'), id => openDose(id), id => deleteDose(id));
+bindSwipeList($('#planList'), id => openPlan(id), id => deletePlan(id));
 
 // ---------- toast ----------
 let toastTimer = null;
@@ -747,7 +765,7 @@ $('#scrim').addEventListener('click', () => hideSheet());
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => hideSheet()));
 
 // ---------- dose form ----------
-let editingId = null, formProduct = 'ldx';
+let editingId = null, formProduct = 'ldx', formPlans = new Set();
 function setProduct(prod, keepMg) {
   formProduct = prod;
   $('#pLdx').setAttribute('aria-pressed', prod === 'ldx');
@@ -763,61 +781,78 @@ function renderChips() {
   const cur = num($('#doseMg').value, NaN);
   $('#mgChips').innerHTML = CHIPS[formProduct].map(v => `<button class="chip" data-mg="${v}" aria-pressed="${v === cur}">${v}</button>`).join('');
 }
+function renderPlanChips() {
+  $('#dosePlansWrap').classList.toggle('hidden', !multi());
+  $('#dosePlans').innerHTML = state.plans.map(p =>
+    `<button class="chip pchip" data-plan="${esc(p.id)}" aria-pressed="${formPlans.has(p.id)}"><i style="background:${planColor(p)}"></i>${esc(p.name)}</button>`).join('');
+}
 $('#mgChips').addEventListener('click', e => { const b = e.target.closest('[data-mg]'); if (b) { $('#doseMg').value = b.dataset.mg; renderChips(); } });
+$('#dosePlans').addEventListener('click', e => {
+  const b = e.target.closest('[data-plan]'); if (!b) return;
+  const id = b.dataset.plan;
+  formPlans.has(id) ? formPlans.delete(id) : formPlans.add(id);
+  renderPlanChips();
+});
 $('#doseMg').addEventListener('input', renderChips);
 $('#pLdx').addEventListener('click', () => setProduct('ldx'));
 $('#pDex').addEventListener('click', () => setProduct('dex'));
 function openDose(id) {
   editingId = id || null;
-  const d = id ? active().doses.find(x => x.id === id) : null;
+  const d = id ? state.doses.find(x => x.id === id) : null;
   $('#doseTitle').textContent = d ? 'Edit dose' : 'Add dose';
   $('#doseDelete').classList.toggle('hidden', !d);
+  const ids = state.plans.map(p => p.id);
   if (d) {
     setProduct(d.product, true);
     $('#doseMg').value = fmtMg(d.mg);
     $('#doseTime').value = d.time;
     $('#doseFood').checked = d.food;
+    formPlans = new Set(d.plans);
   } else {
     setProduct(state.last.product);
     $('#doseTime').value = nowHHMM();
     $('#doseFood').checked = false;
+    const lp = state.last.plans.filter(x => ids.includes(x));
+    formPlans = new Set(lp.length ? lp : ids);
   }
-  renderChips();
+  if (!multi()) formPlans = new Set(ids);
+  renderChips(); renderPlanChips();
   showSheet('#sheetDose');
 }
 $('#btnAdd').addEventListener('click', () => openDose());
 $('#doseSave').addEventListener('click', () => {
   const mg = num($('#doseMg').value, NaN);
   const time = $('#doseTime').value;
+  const plans = state.plans.map(p => p.id).filter(id => formPlans.has(id));
   if (!(mg > 0) || mg > 1000) { $('#doseMg').focus(); toast('Enter a dose in mg'); return; }
   if (!/^\d{2}:\d{2}/.test(time)) { toast('Choose a time'); return; }
-  const dose = { id: editingId || uid(), product: formProduct, mg, time: time.slice(0, 5), food: $('#doseFood').checked };
-  const plan = active();
-  if (editingId) {
-    const i = plan.doses.findIndex(x => x.id === editingId);
-    if (i >= 0) plan.doses[i] = dose; else plan.doses.push(dose);
-  } else plan.doses.push(dose);
+  if (!plans.length) { toast('Choose at least one plan'); return; }
+  const dose = { id: editingId || uid(), product: formProduct, mg, time: time.slice(0, 5), food: $('#doseFood').checked, plans };
+  const i = editingId ? state.doses.findIndex(x => x.id === editingId) : -1;
+  if (i >= 0) state.doses[i] = dose; else state.doses.push(dose);
   state.last.product = formProduct;
   state.last.mg[formProduct] = mg;
+  if (!editingId) state.last.plans = plans;
   save(); hideSheet(); render();
 });
 $('#doseDelete').addEventListener('click', () => { const id = editingId; hideSheet(); deleteDose(id); });
 function deleteDose(id) {
-  const plan = active(), i = plan.doses.findIndex(x => x.id === id);
+  const i = state.doses.findIndex(x => x.id === id);
   if (i < 0) return;
-  const [removed] = plan.doses.splice(i, 1);
+  const [removed] = state.doses.splice(i, 1);
   save(); render();
   toast(`Deleted ${PRODUCTS[removed.product]} ${fmtMg(removed.mg)} mg`, 'Undo', () => {
-    const p = state.plans.find(x => x.id === plan.id); if (!p) return;
-    p.doses.push(removed); save(); render();
+    removed.plans = removed.plans.filter(planById);
+    if (!removed.plans.length) return;
+    state.doses.push(removed); save(); render();
   });
 }
 $('#btnClear').addEventListener('click', () => {
-  const plan = active();
-  if (!plan.doses.length) return;
-  if (!confirm(`Clear all ${plan.doses.length} dose${plan.doses.length > 1 ? 's' : ''} from “${plan.name}”?`)) return;
-  state.yesterday = clone(plan.doses);
-  plan.doses = [];
+  const n = state.doses.length;
+  if (!n) return;
+  if (!confirm(`Clear all ${n} dose${n > 1 ? 's' : ''}?`)) return;
+  state.yesterday = clone(state.doses);
+  state.doses = [];
   save(); render();
 });
 
@@ -928,62 +963,54 @@ $('#importFile').addEventListener('change', async e => {
 });
 
 // ---------- plans ----------
-function renderPlans() {
-  const vis = visiblePlans().map(p => p.id);
-  const summary = p => p.doses.length ? p.doses.slice().sort((a, b) => placeMin(a.time) - placeMin(b.time)).map(d => `${d.product === 'ldx' ? 'V' : 'D'}${fmtMg(d.mg)} ${fmtClock(toMin(d.time))}`).join(' · ') : 'No doses';
-  let h = `<p class="note" style="margin-top:0">Tap a plan to edit it on the main screen. Turn on up to ${MAX_VISIBLE} plans to overlay them on the chart. The plan you’re editing is always shown.</p><div class="group">`;
-  h += state.plans.map(p => {
-    const isA = p.id === state.activeId;
-    return `<div class="planrow">
-      <span class="sw" style="background:${planColor(p)}"></span>
-      <button class="nm" data-activate="${esc(p.id)}"><b>${esc(p.name)}</b><small>${esc(summary(p))}</small>${isA ? '<div class="act">EDITING</div>' : ''}</button>
-      <span class="switch" title="Show on chart"><input type="checkbox" aria-label="Show ${esc(p.name)} on chart" data-vis="${esc(p.id)}" ${vis.includes(p.id) ? 'checked' : ''} ${isA ? 'disabled' : ''}><span></span></span>
-    </div>`;
-  }).join('');
-  h += `</div>
-    <button class="btn primary" id="plDup">Duplicate “${esc(active().name)}” to tweak</button>
-    <button class="btn" id="plRename">Rename “${esc(active().name)}”</button>
-    ${state.plans.length > 1 ? `<button class="btn danger" id="plDelete">Delete “${esc(active().name)}”</button>` : ''}
-    <p class="note">Tip: name your current plan (e.g. “Vyvanse 40 + dex 5 at 1pm”), duplicate it, change a dose in the copy, then compare the curves.</p>`;
-  $('#plansBody').innerHTML = h;
+let editingPlanId = null, copyFrom = '';
+function openPlan(id) {
+  editingPlanId = id || null;
+  const p = id ? planById(id) : null;
+  $('#planTitle').textContent = p ? 'Rename plan' : 'Add plan';
+  $('#planName').value = p ? p.name : `Plan ${state.plans.length + 1}`;
+  $('#planDelete').classList.toggle('hidden', !p);
+  copyFrom = '';
+  const showCopy = !p && state.doses.length > 0;
+  $('#planCopyWrap').classList.toggle('hidden', !showCopy);
+  if (showCopy) renderCopyChips();
+  showSheet('#sheetPlan');
 }
-$('#plansBody').addEventListener('click', e => {
-  const act = e.target.closest('[data-activate]');
-  if (act) { state.activeId = act.dataset.activate; save(); renderPlans(); render(); return; }
-  if (e.target.id === 'plDup') {
-    const a = active();
-    const name = prompt('Name for the copy', a.name + ' (copy)');
-    if (name === null) return;
-    const copy = { id: uid(), name: name.trim() || a.name + ' (copy)', doses: clone(a.doses).map(d => ({ ...d, id: uid() })), visible: true };
-    a.visible = true;
-    state.plans.push(copy); state.activeId = copy.id;
-    enforceVisibleLimit();
-    save(); renderPlans(); render();
-  } else if (e.target.id === 'plRename') {
-    const a = active(), name = prompt('Plan name', a.name);
-    if (name && name.trim()) { a.name = name.trim().slice(0, 80); save(); renderPlans(); render(); }
-  } else if (e.target.id === 'plDelete') {
-    const a = active();
-    if (state.plans.length < 2 || !confirm(`Delete plan “${a.name}”?`)) return;
-    state.plans = state.plans.filter(p => p.id !== a.id);
-    state.activeId = state.plans[0].id;
-    save(); renderPlans(); render();
-  }
-});
-function enforceVisibleLimit() {
-  let n = 1;
-  for (const p of state.plans) {
-    if (p.id === state.activeId) continue;
-    if (p.visible) { if (n >= MAX_VISIBLE) p.visible = false; else n++; }
-  }
+function renderCopyChips() {
+  $('#planCopy').innerHTML = `<button class="chip" data-copy="" aria-pressed="${copyFrom === ''}">None</button>` +
+    state.plans.map(p => `<button class="chip pchip" data-copy="${esc(p.id)}" aria-pressed="${copyFrom === p.id}"><i style="background:${planColor(p)}"></i>${esc(p.name)}</button>`).join('');
 }
-$('#plansBody').addEventListener('change', e => {
-  const id = e.target.dataset.vis; if (!id) return;
-  const p = state.plans.find(x => x.id === id); if (!p) return;
-  if (e.target.checked && visiblePlans().length >= MAX_VISIBLE) { e.target.checked = false; toast(`Up to ${MAX_VISIBLE} plans can be shown at once`); return; }
-  p.visible = e.target.checked; save(); renderPlans(); render();
+$('#planCopy').addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) { copyFrom = b.dataset.copy; renderCopyChips(); } });
+$('#btnAddPlan').addEventListener('click', () => {
+  if (state.plans.length >= MAX_PLANS) { toast(`Up to ${MAX_PLANS} plans`); return; }
+  openPlan();
 });
-$('#btnPlans').addEventListener('click', () => { renderPlans(); showSheet('#sheetPlans'); });
+$('#planSave').addEventListener('click', () => {
+  const name = $('#planName').value.trim().slice(0, 80) || `Plan ${state.plans.length + 1}`;
+  if (editingPlanId) {
+    const p = planById(editingPlanId); if (p) p.name = name;
+  } else {
+    const id = uid();
+    state.plans.push({ id, name });
+    if (copyFrom) for (const d of state.doses) if (d.plans.includes(copyFrom)) d.plans.push(id);
+  }
+  save(); hideSheet(); render();
+});
+$('#planName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#planSave').click(); });
+$('#planDelete').addEventListener('click', () => { const id = editingPlanId; hideSheet(); deletePlan(id); });
+function deletePlan(id) {
+  const p = planById(id);
+  if (!p) return;
+  if (state.plans.length < 2) { render(); toast('You need at least one plan'); return; }
+  const snap = clone({ plans: state.plans, doses: state.doses, yesterday: state.yesterday, last: state.last });
+  state.plans = state.plans.filter(x => x.id !== id);
+  const strip = list => list.map(d => ({ ...d, plans: d.plans.filter(x => x !== id) })).filter(d => d.plans.length);
+  state.doses = strip(state.doses);
+  state.yesterday = strip(state.yesterday);
+  state.last.plans = state.last.plans.filter(x => x !== id);
+  save(); render();
+  toast(`Deleted “${p.name}”`, 'Undo', () => { Object.assign(state, snap); save(); render(); });
+}
 
 // ---------- about ----------
 function renderAbout() {
